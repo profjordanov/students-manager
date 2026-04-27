@@ -189,13 +189,10 @@ export default function TimelinePage() {
   };
 
   return (
-    <div
-      className="timeline-dashboard"
-      style={{ padding: '20px', maxWidth: '900px', margin: '0 auto', color: 'var(--theme-text)' }}
-    >
+    <div style={{ padding: '20px', maxWidth: '900px', margin: '0 auto' }}>
       <h1>Interactive Timeline</h1>
       {lastUpdate && (
-        <p style={{ fontSize: '12px', color: 'var(--theme-text-muted)' }}>
+        <p style={{ fontSize: '12px', color: 'gray' }}>
           Last updated: {lastUpdate.toLocaleTimeString()}
         </p>
       )}
@@ -224,8 +221,8 @@ export default function TimelinePage() {
             <div
               key={label}
               style={{
-                background: 'var(--theme-surface)',
-                border: '1px solid var(--theme-border)',
+                background: '#fff',
+                border: '1px solid #e2e8f0',
                 borderRadius: '14px',
                 padding: '14px 16px',
                 display: 'flex',
@@ -234,7 +231,7 @@ export default function TimelinePage() {
               }}
             >
               <span style={{ fontWeight: '600' }}>{label}</span>
-              <span style={{ fontSize: '14px', color: 'var(--theme-text-muted)' }}>{count}</span>
+              <span style={{ fontSize: '14px', color: '#475569' }}>{count}</span>
             </div>
           ))}
         </div>
@@ -248,9 +245,9 @@ export default function TimelinePage() {
             style={{
               padding: '10px 16px',
               borderRadius: '999px',
-              border: '1px solid var(--theme-border-strong)',
-              background: filter === key ? '#2563eb' : 'var(--theme-surface)',
-              color: filter === key ? 'white' : 'var(--theme-text)',
+              border: '1px solid #cbd5e1',
+              background: filter === key ? '#2563eb' : 'white',
+              color: filter === key ? 'white' : '#0f172a',
               cursor: 'pointer',
               fontWeight: filter === key ? '700' : '500',
             }}
@@ -265,10 +262,9 @@ export default function TimelinePage() {
           style={{
             padding: '10px 16px',
             borderRadius: '999px',
-            border: '1px solid var(--theme-border-strong)',
-            background: 'var(--theme-muted-surface)',
+            border: '1px solid #cbd5e1',
+            background: '#f8fafc',
             cursor: loading ? 'not-allowed' : 'pointer',
-            color: 'var(--theme-text)',
           }}
         >
           Refresh
@@ -280,9 +276,9 @@ export default function TimelinePage() {
           style={{
             padding: '10px 16px',
             borderRadius: '999px',
-            border: '1px solid var(--theme-border-strong)',
-            background: loggingLocation ? 'var(--theme-muted-surface)' : 'rgba(65, 184, 162, 0.16)',
-            color: 'var(--theme-text)',
+            border: '1px solid #cbd5e1',
+            background: loggingLocation ? '#f1f5f9' : '#e0f2fe',
+            color: '#0f172a',
             cursor: loggingLocation ? 'not-allowed' : 'pointer',
           }}
         >
@@ -292,7 +288,7 @@ export default function TimelinePage() {
       </div>
 
       {locationStatus && (
-        <p style={{ fontSize: '13px', color: 'var(--theme-text-muted)', marginTop: '-8px', marginBottom: '16px' }}>
+        <p style={{ fontSize: '13px', color: '#475569', marginTop: '-8px', marginBottom: '16px' }}>
           {locationStatus}
         </p>
       )}
@@ -302,10 +298,9 @@ export default function TimelinePage() {
         style={{
           marginBottom: '24px',
           padding: '18px',
-          background: 'var(--theme-surface)',
+          background: '#f8fafc',
           borderRadius: '18px',
-          border: '1px solid var(--theme-border)',
-          boxShadow: 'var(--theme-card-shadow)',
+          border: '1px solid #e2e8f0',
         }}
       >
         <div style={{ fontWeight: '700', marginBottom: '10px' }}>Add a personalized milestone</div>
@@ -313,13 +308,7 @@ export default function TimelinePage() {
           <select
             value={milestoneType}
             onChange={(e) => setMilestoneType(e.target.value)}
-            style={{
-              padding: '12px 14px',
-              borderRadius: '12px',
-              border: '1px solid var(--theme-border-strong)',
-              background: 'var(--theme-input-bg)',
-              color: 'var(--theme-text)',
-            }}
+            style={{ padding: '12px 14px', borderRadius: '12px', border: '1px solid #cbd5e1' }}
           >
             {eventTypeMeta.map((meta) => (
               <option key={meta.key} value={meta.key}>
@@ -337,9 +326,7 @@ export default function TimelinePage() {
               width: '100%',
               padding: '14px',
               borderRadius: '14px',
-              border: '1px solid var(--theme-border-strong)',
-              background: 'var(--theme-input-bg)',
-              color: 'var(--theme-text)',
+              border: '1px solid #cbd5e1',
               resize: 'vertical',
             }}
           />
@@ -383,9 +370,9 @@ export default function TimelinePage() {
                   position: 'relative',
                   padding: '18px 20px',
                   borderRadius: '20px',
-                  background: 'var(--theme-surface)',
-                  border: '1px solid var(--theme-border)',
-                  boxShadow: 'var(--theme-card-shadow)',
+                  background: 'white',
+                  border: '1px solid #e2e8f0',
+                  boxShadow: '0 12px 30px rgba(15,23,42,0.06)',
                 }}
               >
                 <div
@@ -404,7 +391,7 @@ export default function TimelinePage() {
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: '10px', fontSize: '18px', fontWeight: '700' }}>
                       <span>{label}</span>
                     </div>
-                    <div style={{ marginTop: '6px', fontSize: '13px', color: 'var(--theme-text-muted)' }}>
+                    <div style={{ marginTop: '6px', fontSize: '13px', color: '#64748b' }}>
                       {event.timestamp
                         ? new Date(event.timestamp).toLocaleString()
                         : 'No timestamp'}
@@ -424,7 +411,7 @@ export default function TimelinePage() {
                   </div>
                 </div>
 
-                <div style={{ marginTop: '16px', lineHeight: '1.7', color: 'var(--theme-text-soft)' }}>
+                <div style={{ marginTop: '16px', lineHeight: '1.7', color: '#334155' }}>
                   {formatEventData(event.type, event.data)}
                 </div>
 
@@ -434,9 +421,9 @@ export default function TimelinePage() {
                       marginTop: '14px',
                       padding: '12px 14px',
                       borderRadius: '14px',
-                      background: 'var(--theme-muted-surface)',
-                      border: '1px solid var(--theme-border)',
-                      color: 'var(--theme-text-muted)',
+                      background: '#f8fafc',
+                      border: '1px solid #e2e8f0',
+                      color: '#475569',
                     }}
                   >
                     <strong>Note:</strong> {note}
