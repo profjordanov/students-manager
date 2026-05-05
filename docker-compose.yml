@@ -14,4 +14,11 @@ services:
     image: profjordanov/studentsmanagermvc:10.0
     build:
       context: .
-      dockerfile: StudentsManager.Mvc/Dockerfile      
+      dockerfile: StudentsManager.Mvc/Dockerfile
+
+  studentsmanager.spa:
+    container_name: studentsmanagerspa
+    image: profjordanov/studentsmanagerspa:1.0
+    build:
+      context: ./StudentsManager.Spa
+      dockerfile: Dockerfile
