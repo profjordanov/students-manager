@@ -7,7 +7,7 @@ on:
   workflow_dispatch:
 
 env:
-  AZURE_WEBAPP_NAME: students-manager-dev
+  AZURE_WEBAPP_NAME: students-manager
   AZURE_WEBAPP_PACKAGE_PATH: './StudentsManager.Mvc'
   DOTNET_VERSION: '10.0.x'
 
