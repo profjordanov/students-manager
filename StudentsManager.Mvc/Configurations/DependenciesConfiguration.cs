@@ -4,6 +4,7 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Persistence;
+using StudentsManager.Mvc.Services.AI;
 using StudentsManager.Mvc.Services.AppSettings;
 using StudentsManager.Mvc.Services.Auth;
 using StudentsManager.Mvc.Services.Clicks;
@@ -67,8 +68,7 @@ namespace StudentsManager.Mvc.Configurations
             return services;
         }
 
-        public static IServiceCollection AddAzureClients(this IServiceCollection services,
-            ConfigurationManager configuration)
+        public static IServiceCollection AddAzureClients(this IServiceCollection services, ConfigurationManager configuration)
         {
             var azureServiceBusConnectionString =
                 configuration.GetSection(nameof(ServiceBusSettings))[nameof(ServiceBusSettings.AzureConnectionString)];
@@ -126,6 +126,8 @@ namespace StudentsManager.Mvc.Configurations
             services.AddScoped<ICourseworksService, CourseworksService>();
 
             services.AddScoped<IExaminationAnswersService, ExaminationAnswersService>();
+
+            services.AddScoped<IFoundryAgent, FoundryAgent>();
 
             return services;
         }
