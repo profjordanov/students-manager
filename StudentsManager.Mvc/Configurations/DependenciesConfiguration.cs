@@ -31,6 +31,7 @@ namespace StudentsManager.Mvc.Configurations
             services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
             services.Configure<ServiceBusSettings>(configuration.GetSection(nameof(ServiceBusSettings)));
             services.Configure<StorageSettings>(configuration.GetSection(nameof(StorageSettings)));
+            services.Configure<AgentFrameworkAppSettings>(configuration.GetSection(nameof(AgentFrameworkAppSettings)));
 
             return services;
         }
@@ -128,6 +129,8 @@ namespace StudentsManager.Mvc.Configurations
             services.AddScoped<IExaminationAnswersService, ExaminationAnswersService>();
 
             services.AddScoped<IFoundryAgent, FoundryAgent>();
+
+            services.AddScoped<IAgentFrameworkService, AgentFrameworkService>();
 
             return services;
         }

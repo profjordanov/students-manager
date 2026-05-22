@@ -10,12 +10,21 @@ namespace StudentsManager.Mvc.Controllers
     public class SandboxController(
         IMailService mailService,
         IAzureServiceBusSender serviceBusSender,
-        IFoundryAgent foundryAgent)
+        IFoundryAgent foundryAgent,
+        IAgentFrameworkService agentFrameworkService)
         : ControllerBase
     {
         private readonly IMailService _mailService = mailService;
         private readonly IAzureServiceBusSender _serviceBusSender = serviceBusSender;
         private readonly IFoundryAgent _foundryAgent = foundryAgent;
+        private readonly IAgentFrameworkService _agentFrameworkService = agentFrameworkService;
+
+        [HttpGet("agent")]
+        public async Task<IActionResult> TestAgentFrameworkService()
+        {
+            var result = await _agentFrameworkService.AskAsync("Tell me a one-sentence Harvard fact.");
+            return Ok(result);
+        }
 
         [HttpGet("mail")]
         public async Task<IActionResult> TestMailService()
@@ -229,6 +238,20 @@ namespace StudentsManager.Mvc.Controllers
             try
             {
                 var result = await _foundryAgent.GenerateWithNucleusSampling(userMessage, topP);
+                return Ok(result);
+            }
+            catch (Exception exception)
+            {
+                return Ok(exception.Message);
+            }
+        }
+
+        [HttpGet("toolboxes")]
+        public async Task<IActionResult> TestToolboxes([FromQuery] string message = "Review https://github.com/profjordanov/students-manager")
+        {
+            try
+            {
+                var result = await _foundryAgent.ChatWithToolbox(message);
                 return Ok(result);
             }
             catch (Exception exception)

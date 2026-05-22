@@ -1,4 +1,6 @@
-﻿using Microsoft.Extensions.Options;
+﻿using Azure.Identity;
+using Microsoft.Extensions.Options;
+using ModelContextProtocol.Client;
 using OpenAI;
 using OpenAI.Chat;
 using StudentsManager.Mvc.Settings;
@@ -398,6 +400,113 @@ public class FoundryAgent(IOptions<ServiceBusSettings> options) : IFoundryAgent
         sb.AppendLine($"Tokens: {completion.Usage.TotalTokenCount}");
         sb.AppendLine();
         sb.AppendLine(completion.Content[0].Text);
+
+        return sb.ToString();
+    }
+
+    public async Task<string> ChatWithToolbox(string userMessage)
+    {
+        const string toolboxEndpoint = "";
+
+        var credential = new DefaultAzureCredential();
+        var token = await credential.GetTokenAsync(
+            new Azure.Core.TokenRequestContext(["https://ai.azure.com/.default"]));
+
+        using var httpClient = new HttpClient();
+        httpClient.DefaultRequestHeaders.Authorization =
+            new System.Net.Http.Headers.AuthenticationHeaderValue("Bearer", token.Token);
+        httpClient.DefaultRequestHeaders.Add("Foundry-Features", "Toolboxes=V1Preview");
+
+        var transportOptions = new HttpClientTransportOptions
+        {
+            Endpoint = new Uri(toolboxEndpoint),
+            TransportMode = HttpTransportMode.StreamableHttp,
+        };
+
+        await using var transport = new HttpClientTransport(transportOptions, httpClient, loggerFactory: null, ownsHttpClient: false);
+        await using var mcpClient = await McpClient.CreateAsync(transport);
+
+        // List available tools from the toolbox
+        var mcpTools = await mcpClient.ListToolsAsync();
+
+        // Convert MCP tools to OpenAI ChatTools
+        var chatTools = new List<ChatTool>();
+        foreach (var tool in mcpTools)
+        {
+            chatTools.Add(ChatTool.CreateFunctionTool(
+                functionName: tool.Name,
+                functionDescription: tool.Description,
+                functionParameters: tool.JsonSchema is { } schema
+                    ? BinaryData.FromString(JsonSerializer.Serialize(schema))
+                    : null));
+        }
+
+        var chatOptions = new ChatCompletionOptions();
+        foreach (var tool in chatTools)
+        {
+            chatOptions.Tools.Add(tool);
+        }
+
+        var client = CreateClient();
+        var messages = new List<ChatMessage>
+        {
+            new SystemChatMessage("You are a helpful assistant with access to Azure AI Foundry toolbox tools. Use the available tools to help answer questions."),
+            new UserChatMessage(userMessage)
+        };
+
+        ChatCompletion completion = await client.CompleteChatAsync(messages, chatOptions);
+
+        var sb = new StringBuilder();
+        sb.AppendLine("=== Foundry Toolbox MCP Demo ===");
+        sb.AppendLine($"Available Tools: {mcpTools.Count}");
+        foreach (var tool in mcpTools)
+        {
+            sb.AppendLine($"  - {tool.Name}: {tool.Description}");
+        }
+        sb.AppendLine();
+        sb.AppendLine($"Finish Reason: {completion.FinishReason}");
+
+        // Handle tool calls if the model wants to use tools
+        if (completion.FinishReason == ChatFinishReason.ToolCalls)
+        {
+            foreach (var toolCall in completion.ToolCalls)
+            {
+                sb.AppendLine($"Tool Called: {toolCall.FunctionName}");
+                sb.AppendLine($"Arguments: {toolCall.FunctionArguments}");
+
+                // Call the tool via MCP
+                var arguments = JsonSerializer.Deserialize<Dictionary<string, object>>(toolCall.FunctionArguments.ToString());
+                string resultText;
+                try
+                {
+                    var toolResult = await mcpClient.CallToolAsync(toolCall.FunctionName, arguments);
+                    resultText = string.Join("\n", toolResult.Content
+                        .OfType<ModelContextProtocol.Protocol.TextContentBlock>()
+                        .Select(c => c.Text));
+                }
+                catch (Exception ex)
+                {
+                    resultText = $"Tool call failed: {ex.Message}";
+                    sb.AppendLine($"Tool Error: {ex.Message}");
+                }
+
+                sb.AppendLine($"Tool Result: {resultText}");
+                sb.AppendLine();
+
+                // Continue conversation with tool results
+                messages.Add(new AssistantChatMessage(completion));
+                messages.Add(new ToolChatMessage(toolCall.Id, resultText));
+            }
+
+            // Get final response after tool use
+            ChatCompletion followUp = await client.CompleteChatAsync(messages, chatOptions);
+            sb.AppendLine("=== Final Response ===");
+            sb.AppendLine(followUp.Content[0].Text);
+        }
+        else
+        {
+            sb.AppendLine(completion.Content[0].Text);
+        }
 
         return sb.ToString();
     }

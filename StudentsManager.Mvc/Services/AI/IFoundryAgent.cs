@@ -14,4 +14,5 @@ public interface IFoundryAgent
     Task<string> ReproducibleChat(string userMessage, long seed);
     Task<string> ChatWithLogprobs(string userMessage);
     Task<string> GenerateWithNucleusSampling(string userMessage, float topP = 0.1f);
+    Task<string> ChatWithToolbox(string userMessage);
 }
