@@ -1,4 +1,4 @@
-﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Domain.Views.Statistics;
 using StudentsManager.Mvc.Persistence;
@@ -93,7 +93,7 @@ namespace StudentsManager.Mvc.Services.Statistics
                 SecondExaminationScore =
                     SetSafeScore(StudentExaminationScoreByType(studentCourseExaminations, student.Id, SecondType)),
 
-                HasExaminationAnswer = student.ExaminationAnswers != null && student.ExaminationAnswers.Any(),
+                HasExaminationAnswer = student.ExaminationAnswers != null && student.ExaminationAnswers.Count != 0,
 
                 HasCoursework = hasCoursework,
                 CourseworkScore = courseworkScore
