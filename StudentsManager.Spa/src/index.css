@@ -1384,7 +1384,6 @@ html.mobile body.modal_show {
     display: -ms-flexbox;
     display: flex;
     -webkit-transition-property: -webkit-transform;
-    transition-property: -webkit-transform;
     -o-transition-property: transform;
     transition-property: transform;
     transition-property: transform,-webkit-transform;
@@ -1416,7 +1415,6 @@ html.mobile body.modal_show {
     height: 100%;
     position: relative;
     -webkit-transition-property: -webkit-transform;
-    transition-property: -webkit-transform;
     -o-transition-property: transform;
     transition-property: transform;
     transition-property: transform,-webkit-transform
@@ -1434,8 +1432,6 @@ html.mobile body.modal_show {
         -webkit-box-align: start;
         -ms-flex-align: start;
         align-items: flex-start;
-        -webkit-transition-property: height,-webkit-transform;
-        transition-property: height,-webkit-transform;
         -o-transition-property: transform,height;
         -webkit-transition-property: height,-webkit-transform;
         transition-property: height,-webkit-transform;
@@ -1663,8 +1659,6 @@ button.swiper-pagination-bullet {
 
         .swiper-container-vertical > .swiper-pagination-bullets.swiper-pagination-bullets-dynamic .swiper-pagination-bullet {
             display: inline-block;
-            -webkit-transition: .2s top,.2s -webkit-transform;
-            transition: .2s top,.2s -webkit-transform;
             -o-transition: .2s transform,.2s top;
             -webkit-transition: .2s transform,.2s top;
             transition: .2s transform,.2s top;
@@ -1684,8 +1678,6 @@ button.swiper-pagination-bullet {
 }
 
     .swiper-container-horizontal > .swiper-pagination-bullets.swiper-pagination-bullets-dynamic .swiper-pagination-bullet {
-        -webkit-transition: .2s left,.2s -webkit-transform;
-        transition: .2s left,.2s -webkit-transform;
         -o-transition: .2s transform,.2s left;
         -webkit-transition: .2s transform,.2s left;
         transition: .2s transform,.2s left;
@@ -2053,9 +2045,6 @@ button.swiper-pagination-bullet {
                 border: 2px solid transparent;
                 border-radius: 100%;
                 -webkit-transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                -webkit-transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
                 -o-transition: background .2s ease,border .2s ease,transform .2s ease;
                 transition: background .2s ease,border .2s ease,transform .2s ease;
                 transition: background .2s ease,border .2s ease,transform .2s ease,-webkit-transform .2s ease;
@@ -2083,9 +2072,6 @@ button.swiper-pagination-bullet {
                 border: 2px solid transparent;
                 border-radius: 100%;
                 -webkit-transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                -webkit-transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
                 -o-transition: background .2s ease,border .2s ease,transform .2s ease;
                 transition: background .2s ease,border .2s ease,transform .2s ease;
                 transition: background .2s ease,border .2s ease,transform .2s ease,-webkit-transform .2s ease;
@@ -2112,7 +2098,6 @@ button.swiper-pagination-bullet {
 
             .plyr input[type=range]::-ms-fill-lower {
                 height: 8px;
-                background: 0 0;
                 border: 0;
                 border-radius: 4px;
                 -ms-user-select: none;
@@ -2128,9 +2113,6 @@ button.swiper-pagination-bullet {
                 border: 2px solid transparent;
                 border-radius: 100%;
                 -webkit-transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                -webkit-transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
-                transition: background .2s ease,border .2s ease,-webkit-transform .2s ease;
                 -o-transition: background .2s ease,border .2s ease,transform .2s ease;
                 transition: background .2s ease,border .2s ease,transform .2s ease;
                 transition: background .2s ease,border .2s ease,transform .2s ease,-webkit-transform .2s ease;
@@ -2248,9 +2230,6 @@ button.swiper-pagination-bullet {
     -ms-transform: translateY(-40px);
     transform: translateY(-40px);
     -webkit-transition: -webkit-transform .3s ease;
-    transition: -webkit-transform .3s ease;
-    -webkit-transition: -webkit-transform .3s ease;
-    transition: -webkit-transform .3s ease;
     -o-transition: transform .3s ease;
     transition: transform .3s ease;
     transition: transform .3s ease,-webkit-transform .3s ease;
@@ -2391,7 +2370,6 @@ button.swiper-pagination-bullet {
     border-bottom-right-radius: inherit;
     color: #fff;
     -webkit-transition: opacity .3s ease;
-    -webkit-transition: opacity .3s ease;
     -o-transition: opacity .3s ease;
     transition: opacity .3s ease
 }
@@ -2430,7 +2408,6 @@ button.swiper-pagination-bullet {
     -webkit-box-shadow: 0 1px 1px rgba(0,0,0,.15);
     box-shadow: 0 1px 1px rgba(0,0,0,.15);
     color: #fff;
-    -webkit-transition: all .3s ease;
     -webkit-transition: all .3s ease;
     -o-transition: all .3s ease;
     transition: all .3s ease
@@ -2506,9 +2483,6 @@ button.swiper-pagination-bullet {
     -ms-transform-origin: 50% 100%;
     transform-origin: 50% 100%;
     -webkit-transition: opacity .2s .1s ease,-webkit-transform .2s .1s ease;
-    transition: opacity .2s .1s ease,-webkit-transform .2s .1s ease;
-    -webkit-transition: opacity .2s .1s ease,-webkit-transform .2s .1s ease;
-    transition: opacity .2s .1s ease,-webkit-transform .2s .1s ease;
     -o-transition: transform .2s .1s ease,opacity .2s .1s ease;
     transition: transform .2s .1s ease,opacity .2s .1s ease;
     transition: transform .2s .1s ease,opacity .2s .1s ease,-webkit-transform .2s .1s ease;
@@ -2683,20 +2657,17 @@ button.swiper-pagination-bullet {
 
 .plyr__progress--buffer::-webkit-progress-value {
     -webkit-transition: width .2s ease;
-    -webkit-transition: width .2s ease;
     -o-transition: width .2s ease;
     transition: width .2s ease
 }
 
 .plyr__progress--buffer::-moz-progress-bar {
     -webkit-transition: width .2s ease;
-    -webkit-transition: width .2s ease;
     -o-transition: width .2s ease;
     transition: width .2s ease
 }
 
 .plyr__progress--buffer::-ms-fill {
-    -webkit-transition: width .2s ease;
     -webkit-transition: width .2s ease;
     -o-transition: width .2s ease;
     transition: width .2s ease
@@ -2849,7 +2820,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateY(30px);
             -ms-transform: translateY(30px);
             transform: translateY(30px);
-            -webkit-transition: opacity 1s,transform 1s,visibility 1s;
             -o-transition: opacity 1s,transform 1s,visibility 1s;
             -webkit-transition: opacity 1s,visibility 1s,-webkit-transform 1s;
             transition: opacity 1s,visibility 1s,-webkit-transform 1s;
@@ -2867,7 +2837,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateY(30px);
             -ms-transform: translateY(30px);
             transform: translateY(30px);
-            -webkit-transition: opacity .2s,transform 1s,visibility 1s;
             -o-transition: opacity .2s,transform 1s,visibility 1s;
             -webkit-transition: opacity .2s,visibility 1s,-webkit-transform 1s;
             transition: opacity .2s,visibility 1s,-webkit-transform 1s;
@@ -2885,7 +2854,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateY(100px);
             -ms-transform: translateY(100px);
             transform: translateY(100px);
-            -webkit-transition: opacity .7s,transform .7s,visibility .7s;
             -o-transition: opacity .7s,transform .7s,visibility .7s;
             -webkit-transition: opacity .7s,visibility .7s,-webkit-transform .7s;
             transition: opacity .7s,visibility .7s,-webkit-transform .7s;
@@ -2903,7 +2871,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateY(-20px);
             -ms-transform: translateY(-20px);
             transform: translateY(-20px);
-            -webkit-transition: opacity 1s,transform .5s,visibility .5s;
             -o-transition: opacity 1s,transform .5s,visibility .5s;
             -webkit-transition: opacity 1s,visibility .5s,-webkit-transform .5s;
             transition: opacity 1s,visibility .5s,-webkit-transform .5s;
@@ -2921,7 +2888,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateY(50px);
             -ms-transform: translateY(50px);
             transform: translateY(50px);
-            -webkit-transition: opacity .7s,transform .7s,visibility .7s;
             -o-transition: opacity .7s,transform .7s,visibility .7s;
             -webkit-transition: opacity .7s,visibility .7s,-webkit-transform .7s;
             transition: opacity .7s,visibility .7s,-webkit-transform .7s;
@@ -2939,7 +2905,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(-20px);
             -ms-transform: translateX(-20px);
             transform: translateX(-20px);
-            -webkit-transition: opacity 1s,transform .5s,visibility .5s;
             -o-transition: opacity 1s,transform .5s,visibility .5s;
             -webkit-transition: opacity 1s,visibility .5s,-webkit-transform .5s;
             transition: opacity 1s,visibility .5s,-webkit-transform .5s;
@@ -2957,7 +2922,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(-20px);
             -ms-transform: translateX(-20px);
             transform: translateX(-20px);
-            -webkit-transition: opacity .2s,transform .5s,visibility .5s;
             -o-transition: opacity .2s,transform .5s,visibility .5s;
             -webkit-transition: opacity .2s,visibility .5s,-webkit-transform .5s;
             transition: opacity .2s,visibility .5s,-webkit-transform .5s;
@@ -2975,7 +2939,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(-100px);
             -ms-transform: translateX(-100px);
             transform: translateX(-100px);
-            -webkit-transition: opacity .2s,transform .5s,visibility .5s;
             -o-transition: opacity .2s,transform .5s,visibility .5s;
             -webkit-transition: opacity .2s,visibility .5s,-webkit-transform .5s;
             transition: opacity .2s,visibility .5s,-webkit-transform .5s;
@@ -2993,7 +2956,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(-50px);
             -ms-transform: translateX(-50px);
             transform: translateX(-50px);
-            -webkit-transition: opacity 1s,transform .5s,visibility .5s;
             -o-transition: opacity 1s,transform .5s,visibility .5s;
             -webkit-transition: opacity 1s,visibility .5s,-webkit-transform .5s;
             transition: opacity 1s,visibility .5s,-webkit-transform .5s;
@@ -3011,7 +2973,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(-100px);
             -ms-transform: translateX(-100px);
             transform: translateX(-100px);
-            -webkit-transition: opacity 1s,transform .5s,visibility .5s;
             -o-transition: opacity 1s,transform .5s,visibility .5s;
             -webkit-transition: opacity 1s,visibility .5s,-webkit-transform .5s;
             transition: opacity 1s,visibility .5s,-webkit-transform .5s;
@@ -3029,7 +2990,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(50px);
             -ms-transform: translateX(50px);
             transform: translateX(50px);
-            -webkit-transition: opacity .5s,transform 1s,visibility .5s;
             -o-transition: opacity .5s,transform 1s,visibility .5s;
             -webkit-transition: opacity .5s,visibility .5s,-webkit-transform 1s;
             transition: opacity .5s,visibility .5s,-webkit-transform 1s;
@@ -3047,7 +3007,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: translateX(100px);
             -ms-transform: translateX(100px);
             transform: translateX(100px);
-            -webkit-transition: opacity 1s,transform .5s,visibility .5s;
             -o-transition: opacity 1s,transform .5s,visibility .5s;
             -webkit-transition: opacity 1s,visibility .5s,-webkit-transform .5s;
             transition: opacity 1s,visibility .5s,-webkit-transform .5s;
@@ -3065,7 +3024,6 @@ button.swiper-pagination-bullet {
             -webkit-transform: scale(.9);
             -ms-transform: scale(.9);
             transform: scale(.9);
-            -webkit-transition: opacity .5s,transform 1s,visibility .5s;
             -o-transition: opacity .5s,transform 1s,visibility .5s;
             -webkit-transition: opacity .5s,visibility .5s,-webkit-transform 1s;
             transition: opacity .5s,visibility .5s,-webkit-transform 1s;
@@ -3210,7 +3168,6 @@ ul {
 @media (max-width:1024px) {
     .breadcrumbs {
         padding-left: 35px;
-        position: relative;
         top: 90px;
         position: absolute
     }
@@ -4030,7 +3987,6 @@ p {
         height: auto;
         z-index: 200;
         -webkit-transition: -webkit-transform .4s ease-out;
-        transition: -webkit-transform .4s ease-out;
         -o-transition: transform .4s ease-out;
         transition: transform .4s ease-out;
         transition: transform .4s ease-out,-webkit-transform .4s ease-out
@@ -4071,7 +4027,6 @@ p {
 }
 
 .header-toggle {
-    position: absolute;
     top: 0;
     position: fixed;
     z-index: 200;
@@ -4325,7 +4280,6 @@ p {
         background: #5fb1a8;
         position: absolute;
         left: 0;
-        -webkit-transition: top .3s,transform .3s,opacity .3s,visibility .3s;
         -o-transition: top .3s,transform .3s,opacity .3s,visibility .3s;
         -webkit-transition: top .3s,opacity .3s,visibility .3s,-webkit-transform .3s;
         transition: top .3s,opacity .3s,visibility .3s,-webkit-transform .3s;
@@ -4441,7 +4395,6 @@ p {
 
 @media (max-width:1024px) {
     .header-box {
-        -webkit-transition: transform .5s;
         -o-transition: transform .5s;
         -webkit-transition: -webkit-transform .5s;
         transition: -webkit-transform .5s;
@@ -6161,7 +6114,6 @@ p {
     -ms-transform: inherit;
     transform: inherit;
     -webkit-transition: opacity .6s ease-out,-webkit-transform .6s ease-out;
-    transition: opacity .6s ease-out,-webkit-transform .6s ease-out;
     -o-transition: opacity .6s ease-out,transform .6s ease-out;
     transition: opacity .6s ease-out,transform .6s ease-out;
     transition: opacity .6s ease-out,transform .6s ease-out,-webkit-transform .6s ease-out
@@ -6408,7 +6360,6 @@ form div.tooltip-div {
         display: inline-block;
         position: absolute;
         top: 15px;
-        right: 20px;
         font-size: 0;
         z-index: 2;
         right: 1.56vw
@@ -6444,7 +6395,7 @@ form div.tooltip-div {
     font-size: 0;
     text-align: center;
     position: relative;
-    padding: 90px 0 90px
+    padding: 90px 0
 }
 
     .intro-section:before {
@@ -7036,7 +6987,7 @@ form div.tooltip-div {
 
 @media (min-width:1025px) {
     .advice-section .white-box {
-        padding: 4.17vw 4.17vw
+        padding: 4.17vw
     }
 }
 
@@ -7221,8 +7172,6 @@ form div.tooltip-div {
     background-color: transparent;
     -webkit-box-shadow: none;
     box-shadow: none;
-    -webkit-box-sizing: inherit;
-    box-sizing: inherit;
     height: 39px;
     border: 0;
     padding: 10px 0;
@@ -8123,7 +8072,7 @@ textarea {
     .swipper-button-box {
         height: 63px;
         width: 100px;
-        padding: 3px 3px 3px
+        padding: 3px
     }
 }
 
@@ -8256,7 +8205,6 @@ textarea {
         border: 5px solid transparent;
         -webkit-box-sizing: border-box;
         box-sizing: border-box;
-        -webkit-transition: background .4s,border-color .4s,opacity .4s,visibility .4s,transform .4s;
         -o-transition: background .4s,border-color .4s,opacity .4s,visibility .4s,transform .4s;
         -webkit-transition: background .4s,border-color .4s,opacity .4s,visibility .4s,-webkit-transform .4s;
         transition: background .4s,border-color .4s,opacity .4s,visibility .4s,-webkit-transform .4s;
@@ -11175,7 +11123,6 @@ button.plyr__play-large:focus, button.plyr__play-large:hover {
             top: 8px;
             right: 0;
             z-index: 1;
-            -webkit-transition: transform .4s;
             -o-transition: transform .4s;
             -webkit-transition: -webkit-transform .4s;
             transition: -webkit-transform .4s;
@@ -11414,7 +11361,6 @@ button.plyr__play-large:focus, button.plyr__play-large:hover {
     padding-left: 10px;
     padding-right: 10px;
     display: inline-block;
-    text-align: left;
     padding-top: 10px;
     padding-bottom: 10px;
     text-align: center;
@@ -11984,7 +11930,7 @@ button.plyr__play-large:focus, button.plyr__play-large:hover {
 
     .results-custom .profile-result-container h2 {
         font-size: 24px;
-        padding: 50px 0 5px 0
+        padding: 50px 0 5px
     }
 
     .results-custom .profile-result-container p {
@@ -11993,7 +11939,7 @@ button.plyr__play-large:focus, button.plyr__play-large:hover {
 
     .results-custom .profile-result-container h3 {
         font-size: 18px;
-        padding: 20px 0 10px 0
+        padding: 20px 0 10px
     }
 
 @media (min-width:1921px) {

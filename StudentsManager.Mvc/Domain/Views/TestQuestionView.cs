@@ -1,4 +1,4 @@
-﻿namespace StudentsManager.Mvc.Domain.Views
+namespace StudentsManager.Mvc.Domain.Views
 {
     public class TestQuestionView
     {
@@ -11,7 +11,6 @@
         ///     Test Question Description.
         /// </summary>
         public string Description { get; set; }
-
 
         /// <summary>
         ///     Test Question Options.

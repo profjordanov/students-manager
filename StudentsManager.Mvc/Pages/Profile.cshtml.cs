@@ -26,7 +26,6 @@ namespace StudentsManager.Mvc.Pages
         public int StudentHomeworksCount { get; private set; }
         public int StudentCourseExaminationsCount { get; private set; }
 
-
         public int GetRandom()
         {
             var random = new Random();

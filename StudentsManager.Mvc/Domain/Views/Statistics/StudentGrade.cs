@@ -1,4 +1,4 @@
-﻿namespace StudentsManager.Mvc.Domain.Views.Statistics
+namespace StudentsManager.Mvc.Domain.Views.Statistics
 {
     public class StudentGrade
     {
@@ -9,7 +9,6 @@
         public float IntroScore { get; set; }
         public string? IntroHomework { get; set; }
         public int IntroHomeworkScore => string.IsNullOrEmpty(IntroHomework) ? 0 : 1;
-
 
         public float AdvanceScore { get; set; }
         public string? AdvanceHomework { get; set; }
@@ -34,7 +33,6 @@
         public float ArchitectureScore { get; set; }
         public string? ArchitectureHomework { get; set; }
         public int ArchitectureHomeworkScore => string.IsNullOrEmpty(ArchitectureHomework) ? 0 : 1;
-
 
         public float FirstExaminationScore { get; set; }
         public float SecondExaminationScore { get; set; }

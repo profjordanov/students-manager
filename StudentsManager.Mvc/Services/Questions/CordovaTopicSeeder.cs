@@ -1,4 +1,4 @@
-﻿using StudentsManager.Mvc.Domain.Entities;
+using StudentsManager.Mvc.Domain.Entities;
 using static StudentsManager.Mvc.Services.Topics.TopicsSeeder;
 
 namespace StudentsManager.Mvc.Services.Questions
@@ -70,7 +70,6 @@ namespace StudentsManager.Mvc.Services.Questions
             Description = "Как може Cordova да манипулира файловата система?",
             TopicId = CordovaIntroTopic.Id
         };
-
 
         // Options
         public static readonly QuestionOption CordovaIntroQuestionOption1A = new()
