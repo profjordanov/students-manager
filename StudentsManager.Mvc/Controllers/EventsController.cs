@@ -1,4 +1,4 @@
-﻿using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Domain.Inputs;
@@ -44,5 +44,4 @@ public class EventsController : ControllerBase
 
         return CreatedAtAction(nameof(GetByUser), new { userId = entity.UserId }, entity);
     }
-
 }

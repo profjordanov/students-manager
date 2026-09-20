@@ -5,7 +5,6 @@ using StudentsManager.Mvc.Services.Auth;
 using StudentsManager.Mvc.Services.CourseExaminations;
 using static StudentsManager.Mvc.Services.CourseExaminations.CourseExaminationConstants;
 
-
 namespace StudentsManager.Mvc.Pages
 {
     [Authorize]

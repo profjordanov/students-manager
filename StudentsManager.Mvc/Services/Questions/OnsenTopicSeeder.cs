@@ -1,4 +1,4 @@
-﻿using StudentsManager.Mvc.Domain.Entities;
+using StudentsManager.Mvc.Domain.Entities;
 using static StudentsManager.Mvc.Services.Topics.TopicsSeeder;
 
 namespace StudentsManager.Mvc.Services.Questions
@@ -65,7 +65,6 @@ namespace StudentsManager.Mvc.Services.Questions
             OnsenQuestion6,
             OnsenQuestion7
         };
-
 
         // Options
         public static readonly QuestionOption OnsenQuestion1А = new()

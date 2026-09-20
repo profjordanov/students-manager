@@ -1,6 +1,5 @@
-﻿using StudentsManager.Mvc.Domain.Entities;
+using StudentsManager.Mvc.Domain.Entities;
 using static StudentsManager.Mvc.Services.Topics.TopicsSeeder;
-
 
 namespace StudentsManager.Mvc.Services.Questions
 {
