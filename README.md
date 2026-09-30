@@ -1,6 +1,6 @@
 # StudentsManager
 
-A web application built on .NET, React, MSSQL, Azure, and OpenAI, designed to manage course-related data at the University of Economics – Varna. Students actively use the platform while also developing new functionalities for it.
+StudentsManager is a teaching platform for managing course activity at the University of Economics - Varna. It combines an ASP.NET Core MVC application, a React single-page application, SQL Server persistence, and Azure-backed services for storage, messaging, AI, and text analysis. Students use the platform while extending it as part of their coursework.
 
 [![Docker Compose Build Check](https://github.com/profjordanov/students-manager/actions/workflows/docker-compose.yml/badge.svg)](https://github.com/profjordanov/students-manager/actions/workflows/docker-compose.yml)
 [![Deploy Manager to Azure App Service](https://github.com/profjordanov/students-manager/actions/workflows/dotnet-deploy.yml/badge.svg)](https://github.com/profjordanov/students-manager/actions/workflows/dotnet-deploy.yml)
@@ -8,63 +8,124 @@ A web application built on .NET, React, MSSQL, Azure, and OpenAI, designed to ma
 [![CodeFactor](https://www.codefactor.io/repository/github/profjordanov/students-manager/badge)](https://www.codefactor.io/repository/github/profjordanov/students-manager)
 [![SonarQube Cloud](https://sonarcloud.io/images/project_badges/sonarcloud-light.svg)](https://sonarcloud.io/summary/new_code?id=profjordanov_students-manager)
 
----
-
-## Table of Contents
-
-- [Environments](#environments)
-- [API Endpoints](#api-endpoints)
-- [MVC Frontend](#mvc-frontend-mainjs--chatbot)
-- [Technologies](#-technologies)
-- [Project Structure](#-project-structure)
-- [Getting Started](#️-getting-started)
-- [Running Tests](#-running-tests)
-- [Docker Commands](#-docker-commands)
-- [License](#-license)
-- [Security](#-security)
-
----
-
 ## Environments
 
-| Environment | URL | Notes |
+| Environment | URL | Purpose |
 |---|---|---|
-| Production | https://students-manager.site/ | Public production deployment |
-| Development | https://students-manager-dev.azurewebsites.net/ | Dev backend / API deployment |
-| React (SPA) | https://students-manager-spa.azurewebsites.net/ | React version of the platform |
+| Server & API | https://students-manager.azurewebsites.net/ | Development deployment and API examples below |
+| React SPA | https://students-manager-spa.azurewebsites.net/ | React version of the platform |
 
-## API Endpoints
+## Architecture
 
-### 1. Forum
+- **MVC application:** ASP.NET Core 10 with Razor Pages, MVC controllers, ASP.NET Core Identity, and static assets in `wwwroot`.
+- **SPA:** React 19 with Vite and PWA support in `StudentsManager.Spa`.
+- **Data:** Entity Framework Core 10 with SQL Server. Application startup applies pending migrations and seeds the database.
+- **Integrations:** Azure Blob Storage, Azure Service Bus, Azure AI/OpenAI, and Azure Text Analytics.
+- **Tests:** xUnit tests in `StudentsManager.Tests`, runnable directly or in Docker.
 
-**GET forum posts**
+## Run Locally
+
+### Full Stack With Docker
+
+This is the most reproducible local setup. It starts SQL Server, Azurite, the MVC application, and the React SPA.
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml -p studentsmanager up --build -d
+```
+
+The SPA is available at http://localhost:3000. The MVC container publishes port 80 dynamically; retrieve its mapped host port with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml -p studentsmanager port studentsmanager.mvc 80
+```
+
+Stop the stack with:
+
+```bash
+docker compose -f docker-compose.yml -f docker-compose.override.yml -p studentsmanager down
+```
+
+The repository scripts provide the same workflows for a POSIX shell:
+
+```bash
+./run-app.sh
+./run-tests.sh
+```
+
+### MVC Application
+
+Install the [.NET 10 SDK](https://dotnet.microsoft.com/download). The application has no checked-in `appsettings` file, so provide configuration through user secrets or environment variables before starting it. At minimum, the startup registrations use a SQL Server connection, Azure Storage, and Azure Service Bus settings.
+
+```bash
+cd StudentsManager.Mvc
+dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<sql-server-connection-string>"
+dotnet user-secrets set "StorageSettings:AzureConnectionString" "<azure-storage-connection-string>"
+dotnet user-secrets set "ServiceBusSettings:AzureConnectionString" "<azure-service-bus-connection-string>"
+dotnet user-secrets set "ServiceBusSettings:QueueName" "<queue-name>"
+dotnet run
+```
+
+Add `MailSettings` and `AgentFrameworkAppSettings` when working on the features that use them. Keep all connection strings, keys, and production credentials out of source control.
+
+By default, the project profile listens on `https://localhost:5001` and `http://localhost:5000`. Startup runs Entity Framework migrations and database seeding, so use a disposable or intentionally prepared local database.
+
+### React SPA
+
+Install a current Node.js LTS release, then run the Vite development server:
+
+```bash
+cd StudentsManager.Spa
+npm install
+npm run dev
+```
+
+Create a production bundle with `npm run build`.
+
+## API
+
+The examples below target the development deployment. Replace placeholder IDs and credentials with values valid in the environment you are calling.
+
+| Area | Routes |
+|---|---|
+| Authentication | `POST /api/login` |
+| Students | `GET /api/students`, `GET /api/students/{facultyNumber}`, `GET /api/students/profile/{studentId}`, `PUT /api/students/picture`, `PATCH /api/students/examination` |
+| Forum | `GET /api/slido`, `GET /api/slido/questions`, `POST /api/slido/question`, `POST /api/slido/comment` |
+| Events | `GET /api/events/{userId}`, `POST /api/events` |
+| AI examination answers | `GET /api/chatbot/examination-answers/{studentId}`, `POST /api/chatbot/examination-answers` |
+| Course settings | `GET /api/homeworks/{userId}`, `GET /api/settings/enable/reg`, `GET /api/settings/disable/reg`, `GET /api/examinationsettings/{enable|disable}/{first|second}` |
+
+Some student and examination routes use application-specific authorization. Follow the authentication policy of the deployed environment rather than assuming that every API route is anonymous.
+
+### Forum
+
+Get paginated forum posts:
 
 ```bash
 curl --location 'https://students-manager-dev.azurewebsites.net/api/slido?limit=20&skip=0'
 ```
 
-**POST question**
+Post a question:
 
 ```bash
 curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/question' \
   --header 'Content-Type: application/json' \
   --data '{
-    "question": "api post get"
+    "question": "How do I submit the coursework?"
   }'
 ```
 
-**POST comment**
+Post a comment:
 
 ```bash
 curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/comment' \
   --header 'Content-Type: application/json' \
   --data '{
     "forumQuestionId": 4,
-    "description": "api post comment"
+    "description": "Check the assignment deadline in the course page."
   }'
 ```
 
-**GET questions**
+Get question text only:
 
 ```bash
 curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/questions?limit=20&skip=0'
@@ -73,49 +134,51 @@ curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/questi
 Example response:
 
 ```json
-["api post get", "lower api/slido/question", "because", "why?", "question", ".net 10"]
+[
+  "How do I submit the coursework?",
+  "When is the next examination?"
+]
 ```
 
-### 2. User Profile / Login
+### Login and Profile
 
-**POST login**
+Log in with an email and password:
 
 ```bash
 curl --request POST \
-  --url https://students-manager-dev.azurewebsites.net/api/login \
+  --url 'https://students-manager-dev.azurewebsites.net/api/login' \
   --header 'Content-Type: application/json' \
   --data '{
-    "email": "jordan@abv.bg",
+    "email": "student@example.edu",
     "password": "password"
   }'
 ```
 
-Responses:
+Successful response:
 
 ```json
-// 200
 {
   "userId": "1eac9820-5e6e-4d10-6e94-08de36f40f78"
 }
 ```
 
+Invalid credentials return:
+
 ```json
-// 401
 {
   "message": "Invalid email or password."
 }
 ```
 
-**GET profile**
+Get a student profile:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/students/profile/022a6007-f33c-47c3-b811-08de88b121f2'
+curl --location 'https://students-manager-dev.azurewebsites.net/api/students/profile/<student-id>'
 ```
 
 Example response:
 
 ```json
-// 200
 {
   "id": "022a6007-f33c-47c3-b811-08de88b121f2",
   "fullName": "Dr J",
@@ -123,7 +186,7 @@ Example response:
   "facultyNumber": "987987",
   "testQuestions": [
     {
-      "testQuestionDescription": "Какъв е правилният синтаксис за препратка към външен скрипт, наречен xxx.js?",
+      "testQuestionDescription": "Which syntax references an external script named xxx.js?",
       "questionOptionDescription": "<script src=xxx.js>",
       "wasCorrect": true
     }
@@ -131,43 +194,38 @@ Example response:
 }
 ```
 
-```json
-// 400
-{
-  "message": "Invalid user."
-}
-```
+The profile endpoint returns `404 Not Found` when no student matches the supplied ID.
 
-**PUT picture**
+Update a profile picture:
 
 ```bash
 curl --location --request PUT 'https://students-manager-dev.azurewebsites.net/api/students/picture' \
   --header 'Content-Type: application/json' \
   --data '{
-    "FacultyNumber": "123123123",
-    "Password": "password",
-    "Picture": "data:image/jpeg;base64,/9j/k="
+    "facultyNumber": "123123123",
+    "password": "password",
+    "picture": "data:image/jpeg;base64,/9j/k="
   }'
 ```
 
-### 3. Events
+### Events
 
-**POST event**
+Create an event:
 
 ```bash
 curl --location 'https://students-manager-dev.azurewebsites.net/api/events' \
   --header 'Content-Type: application/json' \
   --data '{
-    "userId": "123123",
-    "type": "test",
-    "data": "temp"
+    "userId": "<user-id>",
+    "type": "geolocation-position",
+    "data": "{\"latitude\":43.2141,\"longitude\":27.9147}"
   }'
 ```
 
-**GET events by user ID**
+The endpoint returns `201 Created` with the persisted event. Retrieve events for a user with:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/events/022a6007-f33c-47c3-b811-08de88b121f2'
+curl --location 'https://students-manager-dev.azurewebsites.net/api/events/<user-id>'
 ```
 
 Example response:
@@ -178,192 +236,62 @@ Example response:
     "id": "fddea52a-5702-46c8-86f6-00ed51641660",
     "userId": "022a6007-f33c-47c3-b811-08de88b121f2",
     "datetimeUtc": "2026-03-24T14:33:42.3137213",
-    "type": "geolocation-position-drj",
-    "data": "{\"latitude\":53.513211150189285,\"longitude\":-80.50332253634296}"
+    "type": "geolocation-position",
+    "data": "{\"latitude\":43.2141,\"longitude\":27.9147}"
   }
 ]
 ```
 
-### 4. Chatbot
+### Chatbot Examination Answers
 
-**POST save results**
+Submit answers for evaluation. The request must include at least one answer; the result is saved even if the AI evaluation is unsuccessful.
 
 ```bash
-curl "https://students-manager-dev.azurewebsites.net/api/chatbot/examination-answers" \
-  -H "Content-Type: application/json" \
+curl --location 'https://students-manager-dev.azurewebsites.net/api/chatbot/examination-answers' \
+  --header 'Content-Type: application/json' \
   --data-raw '{
-    "userId": "022a6007-f33c-47c3-b811-08de88b121f2",
+    "userId": "<user-id>",
     "answers": [
       {
         "questionId": "q123123",
         "questionText": "What is programming?",
-        "answer": "programming is .."
+        "answer": "Programming is the process of writing instructions for a computer."
       }
     ]
   }'
 ```
 
-**GET examination answers**
+Retrieve previously saved examination answers:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/chatbot/examination-answers/522a6007-fkkc-47c3-b811-08de88b121f2'
+curl --location 'https://students-manager-dev.azurewebsites.net/api/chatbot/examination-answers/<student-id>'
 ```
 
----
+## Tests
 
-## MVC Frontend (main.js + chatbot)
-
-### main.js
-
-`main.js` is a single bundled and minified file that mixes third-party libraries with a custom global `App` namespace (site logic).
-
-#### Third-party libraries embedded in the bundle
-
-| Library | Version | Purpose |
-|---------|---------|---------|
-| jQuery | 3.1.1 | DOM manipulation |
-| GSAP TweenMax | 1.19.x | Animations (ScrollToPlugin, CSSPlugin, etc.) |
-| ScrollMagic | 2.0.5 | Scroll-triggered animations (plus GSAP plugin) |
-| Blazy | — | Lazy-loading images |
-| fullPage.js | — | One-page scrolling sections |
-| Swiper | — | Carousel / slider |
-| Plyr | — | Video / audio player |
-| jQBrowser | — | User-agent detection helper |
-
-#### Custom application logic
-
-The bundle defines a global `App` object and initializes multiple modules via `App.init()`.
-
-On window load it calls:
-
-| Module | Description |
-|--------|-------------|
-| `App.resize()` | Sets `App.viewport_height` / `App.viewport_width` and `App.mobile` based on UA / width |
-| `App.bind()` | Attaches UI handlers (menu, category tabs, video popup, job popup, chatbot start, etc.) |
-| `App.UI.init()` | Lazy-loading + fullPage initialization |
-| `App.Test.init()` | Course tests behavior |
-| `App.Scroll.init()` | Parallax + header scroll states + scroll-to |
-| `App.sliderSwipper.init()` | Initializes Swiper sliders |
-| `App.Animations`, `App.Login`, `App.Profile` | Additional UI modules |
-
-### Course Tests Page
-
-The key module is `App.Test`. It binds click handlers on the active question only:
-
-- `#test` click on `.question.active .answer input` → `animateAfterClick`
-- `#test` click on `.question.active .answer input` → `countStats`
-
-**`countStats()` behavior:**
-
-- Reads the value of the clicked radio (`action` / `process` / `people` / `idea`)
-- Reads `data-answer` (`1` or `2`) and `data-question` (`1..40`)
-- Resets / recomputes category totals
-- Records the chosen answer for that question
-
-**`animateAfterClick()` behavior:**
-
-- Hides answers for non-active questions initially (`setOpacityToAllUnactiveQuestions`)
-- After selecting an answer, animates the transition to the next `.question` (via TweenMax)
-- Uses a guard (`#test.animating`) to prevent double-clicks during transitions
-
-### Chatbot
-
-#### External dependencies
-
-| Library | Bundled? | Purpose |
-|---------|----------|---------|
-| Lodash (`_`) | Yes | Utility functions (`_.trim`, `_.map`, `_.filter`, etc.) |
-| Typed.js | Yes | Typing animation effect (`new Typed(...)`) |
-| jQuery (`$`) | No | Expected to be available globally |
-
----
-
-## 🚀 Technologies
-
-- **Backend:** ASP.NET Core MVC
-- **Frontend:** React (SPA), Razor Views
-- **Database:** Microsoft SQL Server
-- **Cloud:** Azure App Service
-- **AI:** OpenAI
-- **Containerization:** Docker & Docker Compose
-- **Testing:** xUnit (StudentsManager.Tests)
-
-## 📁 Project Structure
-
-```
-├── StudentsManager.Mvc/          # Main MVC application
-│   ├── Controllers/              # MVC Controllers
-│   ├── Domain/                   # Domain models
-│   ├── Mappings/                 # Object mappings
-│   ├── Migrations/               # Database migrations
-│   ├── Persistence/              # Data access layer
-│   ├── Services/                 # Business logic services
-│   ├── Settings/                 # Configuration settings
-│   ├── Views/                    # Razor views
-│   └── wwwroot/                  # Static files
-├── StudentsManager.Tests/        # Unit tests
-└── docker-compose.yml            # Docker orchestration
-```
-
-## 🛠️ Getting Started
-
-### Prerequisites
-
-- [.NET SDK](https://dotnet.microsoft.com/download)
-- [Docker](https://www.docker.com/get-started) (optional)
-
-### Running Locally
+Run the test project directly:
 
 ```bash
-cd StudentsManager.Mvc
-dotnet run
+dotnet test StudentsManager.Tests/StudentsManager.Tests.csproj
 ```
 
-### Running with Docker
+Or run the Docker-based test environment, which starts SQL Server for the test container:
 
 ```bash
-./run-app.sh
+docker compose -f docker-compose.integration.yml up --exit-code-from studentsmanager.tests --build
 ```
 
-Or using Docker Compose directly:
+## Repository Layout
 
-```bash
-docker-compose up
+```text
+StudentsManager.Mvc/             ASP.NET Core MVC application, controllers, Razor views, services, EF migrations
+StudentsManager.Spa/             React/Vite single-page application
+StudentsManager.Tests/           xUnit test project
+docker-compose.yml               Base Docker Compose services
+docker-compose.override.yml      Local development Docker configuration
+docker-compose.integration.yml   Docker test environment
 ```
 
-### Stopping the Application
+## License
 
-```bash
-./run-down-app.sh
-```
-
-## 🧪 Running Tests
-
-```bash
-./run-tests.sh
-```
-
-Or manually:
-
-```bash
-dotnet test StudentsManager.Tests/
-```
-
-## 🐳 Docker Commands
-
-| Script | Description |
-|--------|-------------|
-| `run-app.sh` | Start the application |
-| `run-down-app.sh` | Stop the application |
-| `push-app.sh` | Push Docker images |
-| `run-tests.sh` | Run test suite |
-
----
-
-## 📄 License
-
-See [LICENSE](LICENSE) for details.
-
-## 🔒 Security
-
-See [SECURITY.md](SECURITY.md) for security policies.
+See [LICENSE](LICENSE) for license details.
