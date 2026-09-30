@@ -101,13 +101,13 @@ Some student and examination routes use application-specific authorization. Foll
 Get paginated forum posts:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/slido?limit=20&skip=0'
+curl --location 'https://students-manager.azurewebsites.net/api/slido?limit=20&skip=0'
 ```
 
 Post a question:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/question' \
+curl --location 'https://students-manager.azurewebsites.net/api/slido/question' \
   --header 'Content-Type: application/json' \
   --data '{
     "question": "How do I submit the coursework?"
@@ -117,7 +117,7 @@ curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/questi
 Post a comment:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/comment' \
+curl --location 'https://students-manager.azurewebsites.net/api/slido/comment' \
   --header 'Content-Type: application/json' \
   --data '{
     "forumQuestionId": 4,
@@ -128,7 +128,7 @@ curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/commen
 Get question text only:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/slido/questions?limit=20&skip=0'
+curl --location 'https://students-manager.azurewebsites.net/api/slido/questions?limit=20&skip=0'
 ```
 
 Example response:
@@ -146,7 +146,7 @@ Log in with an email and password:
 
 ```bash
 curl --request POST \
-  --url 'https://students-manager-dev.azurewebsites.net/api/login' \
+  --url 'https://students-manager.azurewebsites.net/api/login' \
   --header 'Content-Type: application/json' \
   --data '{
     "email": "student@example.edu",
@@ -173,7 +173,7 @@ Invalid credentials return:
 Get a student profile:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/students/profile/<student-id>'
+curl --location 'https://students-manager.azurewebsites.net/api/students/profile/<student-id>'
 ```
 
 Example response:
@@ -199,7 +199,7 @@ The profile endpoint returns `404 Not Found` when no student matches the supplie
 Update a profile picture:
 
 ```bash
-curl --location --request PUT 'https://students-manager-dev.azurewebsites.net/api/students/picture' \
+curl --location --request PUT 'https://students-manager.azurewebsites.net/api/students/picture' \
   --header 'Content-Type: application/json' \
   --data '{
     "facultyNumber": "123123123",
@@ -213,7 +213,7 @@ curl --location --request PUT 'https://students-manager-dev.azurewebsites.net/ap
 Create an event:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/events' \
+curl --location 'https://students-manager.azurewebsites.net/api/events' \
   --header 'Content-Type: application/json' \
   --data '{
     "userId": "<user-id>",
@@ -225,7 +225,7 @@ curl --location 'https://students-manager-dev.azurewebsites.net/api/events' \
 The endpoint returns `201 Created` with the persisted event. Retrieve events for a user with:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/events/<user-id>'
+curl --location 'https://students-manager.azurewebsites.net/api/events/<user-id>'
 ```
 
 Example response:
@@ -247,7 +247,7 @@ Example response:
 Submit answers for evaluation. The request must include at least one answer; the result is saved even if the AI evaluation is unsuccessful.
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/chatbot/examination-answers' \
+curl --location 'https://students-manager.azurewebsites.net/api/chatbot/examination-answers' \
   --header 'Content-Type: application/json' \
   --data-raw '{
     "userId": "<user-id>",
@@ -264,7 +264,7 @@ curl --location 'https://students-manager-dev.azurewebsites.net/api/chatbot/exam
 Retrieve previously saved examination answers:
 
 ```bash
-curl --location 'https://students-manager-dev.azurewebsites.net/api/chatbot/examination-answers/<student-id>'
+curl --location 'https://students-manager.azurewebsites.net/api/chatbot/examination-answers/<student-id>'
 ```
 
 ## Tests
