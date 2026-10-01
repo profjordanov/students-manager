@@ -212,9 +212,9 @@ function HomePage() {
         if (!subtitleRef.current) return;
         const typed = new Typed(subtitleRef.current, {
             strings: [
-                'Your learning hub — powered by AI, built for curious minds.',
-                'Track progress, solve challenges, and grow with your peers.',
-                'Everything you need to go from beginner to builder.',
+                'Your learning hub — powered by AI, built for curious minds. v11',
+                'Track progress, solve challenges, and grow with your peers. v11',
+                'Everything you need to go from beginner to builder. v11',
             ],
             typeSpeed: 38,
             backSpeed: 18,
