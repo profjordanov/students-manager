@@ -45,6 +45,14 @@ namespace StudentsManager.Mvc.Persistence
 
         public DbSet<UserCoursework> UserCourseworks { get; set; }
 
+        public DbSet<Survey> Surveys { get; set; }
+
+        public DbSet<PersonalityTestChoice> PersonalityTestChoices { get; set; }
+
+        public DbSet<PersonalityTestResult> PersonalityTestResults { get; set; }
+
+        public DbSet<PowerUpAnalysis> PowerUpAnalyses { get; set; }
+
         public DbSet<Event> Events { get; set; }
 
         protected override void OnModelCreating(ModelBuilder builder)
@@ -60,6 +68,10 @@ namespace StudentsManager.Mvc.Persistence
             builder.ConfigureCourseRelations();
             builder.ConfigureForum();
             builder.ConfigureUserCourseworks();
+            builder.ConfigureSurveys();
+            builder.ConfigurePersonalityTestChoices();
+            builder.ConfigurePersonalityTestResults();
+            builder.ConfigurePowerUpAnalyses();
 
             builder.ConfigureCourses();
             builder.ConfigureCourseExamination();

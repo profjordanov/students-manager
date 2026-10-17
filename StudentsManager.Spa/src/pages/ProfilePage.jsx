@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { getProfile, updatePicture } from '../services/userService';
 
@@ -12,13 +12,7 @@ function ProfilePage() {
 	const [password, setPassword] = useState('');
 	const [updating, setUpdating] = useState(false);
 
-	useEffect(() => {
-		if (userId) {
-			loadProfile();
-		}
-	}, [userId]);
-
-	const loadProfile = async () => {
+	const loadProfile = useCallback(async () => {
 		try {
 			const data = await getProfile(userId);
 			setProfile(data);
@@ -26,7 +20,13 @@ function ProfilePage() {
 		} catch (err) {
 			setError('Failed to load profile: ' + err.message);
 		}
-	};
+	}, [userId]);
+
+	useEffect(() => {
+		if (userId) {
+			loadProfile();
+		}
+	}, [userId, loadProfile]);
 
 	const handleFileChange = (e) => {
 		setSelectedFile(e.target.files[0]);
@@ -69,10 +69,16 @@ function ProfilePage() {
 		});
 	};
 
-	if (!profile) return <div>Loading...</div>;
+	if (!profile) {
+		return (
+			<div role={error ? 'alert' : undefined} style={{ margin: '10rem 0', textAlign: 'center' }}>
+				{error || 'Loading...'}
+			</div>
+		);
+	}
 
 	return (
-		<div class="main-wrap-content profile-section" style={{ display: 'flex', flexWrap: 'wrap', margin: '10rem 0' }}>
+		<div className="main-wrap-content profile-section" style={{ display: 'flex', flexWrap: 'wrap', margin: '10rem 0' }}>
 			<div className="col-d-25 col-m-100 center card" style={{ padding: '1rem', flexDirection: 'column', display: 'flex', marginBottom: '2rem' }}>
 				{profile.base64EncodePicture ? (
 					<img src={`data:image/png;base64,${profile.base64EncodePicture}`} style={{ maxWidth: '100%', height: 'auto', borderRadius: '50%' }} alt="avatar" />
@@ -87,17 +93,17 @@ function ProfilePage() {
 						{error && <div style={{ color: 'red', marginBottom: '1rem', padding: '0.5rem', border: '1px solid red', borderRadius: '4px', backgroundColor: '#ffe6e6' }}>{error}</div>}
 						<form onSubmit={handleSubmit}>
 							<div style={{ marginBottom: '20px' }}>
-								<label className="label-profile-fld">Select new picture:</label>
-								<input type="file" accept="image/*" onChange={handleFileChange} required className="block" style={{ marginTop: '5px' }} />
+								<label htmlFor="profile-picture" className="label-profile-fld">Select new picture:</label>
+								<input id="profile-picture" type="file" accept="image/*" onChange={handleFileChange} required className="block" style={{ marginTop: '5px' }} />
 							</div>
 							<div className="prel" style={{ marginBottom: '20px' }}>
-								<label className="label-profile-fld">Faculty Number:</label>
-								<input type="text" className="profile-form-fld" value={confirmFacultyNumber} onChange={(e) => setConfirmFacultyNumber(e.target.value)} required />
+								<label htmlFor="profile-faculty-number" className="label-profile-fld">Faculty Number:</label>
+								<input id="profile-faculty-number" type="text" className="profile-form-fld" value={confirmFacultyNumber} onChange={(e) => setConfirmFacultyNumber(e.target.value)} required />
 								<div className="border-bottom"></div>
 							</div>
 							<div className="prel" style={{ marginBottom: '20px' }}>
-								<label className="label-profile-fld">Password:</label>
-								<input type="password" className="profile-form-fld" value={password} onChange={(e) => setPassword(e.target.value)} required />
+								<label htmlFor="profile-password" className="label-profile-fld">Password:</label>
+								<input id="profile-password" type="password" className="profile-form-fld" value={password} onChange={(e) => setPassword(e.target.value)} autoComplete="current-password" required />
 								<div className="border-bottom"></div>
 							</div>
 							<div className="profile-btn-container">
@@ -111,7 +117,7 @@ function ProfilePage() {
 			<div className="col-d-75 col-m-100" style={{ padding: '0 1rem' }}>
 				<div style={{ display: 'flex', flexWrap: 'wrap', gap: '1rem' }}>
 					<div className="card" style={{ flex: '1 1 50%', minWidth: '300px', textAlign: 'center' }}>
-						<div class="title-small" style={{paddingBottom: '1rem'}}>Студентски профил</div>
+						<div className="title-small" style={{paddingBottom: '1rem'}}>Студентски профил</div>
 						<div>Име</div>
 						<p>{profile.fullName}</p>
 						<div>Факултетен номер</div>
@@ -120,7 +126,7 @@ function ProfilePage() {
 					<div className="card" style={{ flex: '1 1 50%', minWidth: '300px' }}>
 						<div className="title-small" style={{paddingBottom: '1rem', textAlign: 'center'}}>Тест въпроси</div>
 						{profile.testQuestions && profile.testQuestions.length > 0 ? (
-							<ul class="list" style={{ paddingLeft: '1rem' }}>
+							<ul className="list" style={{ paddingLeft: '1rem' }}>
 								{profile.testQuestions.map((q, index) => (
 									<li key={index} style={{ marginBottom: '0.5rem' }}>
 										<strong>{q.testQuestionDescription}</strong><br />

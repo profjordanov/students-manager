@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { getUserEvents, createEvent, logGeoEvent } from '../services/eventsService';
 import { useAuth } from '../context/AuthContext';
 
@@ -17,6 +17,39 @@ const getEventMeta = (type) => {
   return eventTypeMeta.find((meta) => normalized.includes(meta.key)) ?? null;
 };
 
+const parseEventData = (rawData) => {
+  if (rawData == null) return null;
+  if (typeof rawData !== 'string') return rawData;
+  try {
+    return JSON.parse(rawData);
+  } catch {
+    return rawData;
+  }
+};
+
+const normalizeTimestampString = (timestamp) => {
+  if (!timestamp) return null;
+  if (typeof timestamp !== 'string') return timestamp;
+
+  const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestamp);
+  if (hasTimezone) return timestamp;
+
+  const bareIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
+  return bareIsoPattern.test(timestamp) ? `${timestamp}Z` : timestamp;
+};
+
+const normalizeEvent = (event) => ({
+  ...event,
+  type: event.type ?? event.Type,
+  timestamp: normalizeTimestampString(
+    event.timestamp ??
+      event.Timestamp ??
+      event.datetimeUtc ??
+      event.DatetimeUtc
+  ),
+  data: parseEventData(event.data ?? event.Data),
+});
+
 export default function TimelinePage() {
   const [events, setEvents] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -30,49 +63,7 @@ export default function TimelinePage() {
 
   const { userId } = useAuth();
 
-  useEffect(() => {
-    if (userId) {
-      loadEvents();
-      const interval = setInterval(loadEvents, 60000); // Refresh every 60 seconds
-      return () => clearInterval(interval);
-    }
-  }, [userId]);
-
-  const parseEventData = (rawData) => {
-    if (rawData == null) return null;
-    if (typeof rawData !== 'string') return rawData;
-    try {
-      return JSON.parse(rawData);
-    } catch (error) {
-      return rawData;
-    }
-  };
-
-  
-  const normalizeTimestampString = (timestamp) => {
-    if (!timestamp) return null;
-    if (typeof timestamp !== 'string') return timestamp;
-
-    const hasTimezone = /(?:Z|[+-]\d{2}:?\d{2})$/i.test(timestamp);
-    if (hasTimezone) return timestamp;
-
-    const bareIsoPattern = /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}(?:\.\d+)?$/;
-    return bareIsoPattern.test(timestamp) ? `${timestamp}Z` : timestamp;
-  };
-
-  const normalizeEvent = (event) => ({
-    ...event,
-    type: event.type ?? event.Type,
-    timestamp: normalizeTimestampString(
-      event.timestamp ??
-        event.Timestamp ??
-        event.datetimeUtc ??
-        event.DatetimeUtc
-    ),
-    data: parseEventData(event.data ?? event.Data),
-  });
-
-  const loadEvents = async () => {
+  const loadEvents = useCallback(async () => {
     try {
       setLoading(true);
       const data = await getUserEvents(userId);
@@ -87,14 +78,35 @@ export default function TimelinePage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [userId]);
+
+  useEffect(() => {
+    if (userId) {
+      loadEvents();
+      const interval = setInterval(loadEvents, 60000); // Refresh every 60 seconds
+      return () => clearInterval(interval);
+    }
+  }, [userId, loadEvents]);
 
   const formatEventData = (type, data) => {
-    const eventData = typeof data === 'string' ? parseEventData(data) : data;
+    const eventData = parseEventData(data);
     if (!eventData) return 'No data';
 
+    // Personal milestones only carry a note, which is rendered separately below.
+    if (eventData.note) {
+      return 'Personal milestone';
+    }
+
     if (type?.includes('quiz')) {
-      return `Scored ${eventData.score}% on quiz (${eventData.correct}/${eventData.totalQuestions} correct)`;
+      if (type.includes('start')) {
+        return `Started a quiz with ${eventData.totalQuestions ?? '?'} questions`;
+      }
+      if (type.includes('answer')) {
+        return `Answered question ${eventData.questionNumber ?? '?'} ${eventData.isCorrect ? 'correctly' : 'incorrectly'}`;
+      }
+      const score = eventData.percentage ?? eventData.score ?? 0;
+      const correct = eventData.correctCount ?? eventData.correct ?? 0;
+      return `Scored ${score}% on quiz (${correct}/${eventData.totalQuestions ?? '?'} correct)`;
     }
 
     if (type?.includes('chatbot')) {
@@ -118,10 +130,6 @@ export default function TimelinePage() {
         return `Location updated: ${eventData.location} (±${eventData.accuracy ?? 'n/a'}m)`;
       }
       return `Location updated: ${eventData.location || 'Unknown'}`;
-    }
-
-    if (eventData.note) {
-      return eventData.note;
     }
 
     return JSON.stringify(eventData, null, 2);

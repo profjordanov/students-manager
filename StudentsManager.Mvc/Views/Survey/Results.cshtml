@@ -1,0 +1,39 @@
+@model IReadOnlyList<StudentsManager.Mvc.Domain.Views.Surveys.SurveyResultView>
+
+@section Styles {
+    <style>
+        .survey-page { max-width: 1160px; margin: 0 auto; padding: 48px 24px 80px; }
+        .survey-page .soge-title { font-size: 36px; line-height: 1.2; margin: 0 0 12px; }
+        .survey-page .red { color: #b16f5f; }
+        .survey-page .soge-btn { display: inline-flex; min-width: 180px; padding: 0 16px; margin: 12px 0 32px; }
+        .survey-results-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(100%, 350px), 1fr)); gap: 24px; align-items: start; }
+        .survey-result { border: 1px solid #e3e3e3; border-radius: 6px; overflow: hidden; background: #fff; min-width: 0; }
+        .survey-result-picture { display: block; width: 100%; height: 260px; object-fit: contain; background: #e3e3e3; }
+        .survey-result-content { padding: 24px; }
+        .survey-result-name { font-size: 22px; line-height: 1.3; margin: 0 0 4px; overflow-wrap: anywhere; }
+        .survey-result-date { display: block; color: #6f6f6f; margin-bottom: 24px; }
+        .survey-response { margin-top: 20px; }
+        .survey-result .soge-question { font-size: 16px; line-height: 1.4; max-width: none; padding: 0; margin: 0 0 8px; }
+        .survey-answer { margin: 0; white-space: pre-line; overflow-wrap: anywhere; }
+    </style>
+}
+
+<div class="total-wrap-content">
+    <main class="survey-page">
+        <h1 class="soge-title">Survey <span class="red">results</span></h1>
+        <a asp-controller="Survey" asp-action="Index" class="soge-btn">My survey</a>
+        @if (Model.Count == 0)
+        {
+            <p>No submissions yet.</p>
+        }
+        else
+        {
+            <div class="survey-results-grid">
+                @foreach (var result in Model)
+                {
+                    @await Html.PartialAsync("_SurveyResultPartial", result)
+                }
+            </div>
+        }
+    </main>
+</div>

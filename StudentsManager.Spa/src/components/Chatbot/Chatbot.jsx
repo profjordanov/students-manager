@@ -2,12 +2,13 @@ import { useState, useCallback, useRef, useEffect } from 'react';
 import { Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import questionsData from '../../data/questions.json';
+import { getErrorMessage } from '../../services/apiConfig';
 import { submitChatbotAnswers } from '../../services/chatbotService';
+import { logEvent } from '../../services/eventsService';
 import ChatbotQuestion from './ChatbotQuestion';
 import ChatbotOptions from './ChatbotOptions';
 import ChatbotTextInput from './ChatbotTextInput';
 import ChatbotForm from './ChatbotForm';
-import { createEvent } from '../../services/eventsService';
 
 const questions = questionsData.questions;
 
@@ -55,38 +56,31 @@ function Chatbot() {
         }, 1000);
     }, [currentIndex]);
 
-const handleConfirm = useCallback(async () => {
-    setIsSubmitting(true);
-    setSubmissionError('');
+    const handleConfirm = useCallback(async () => {
+        setIsSubmitting(true);
+        setSubmissionError('');
 
-    try {
-        const result = await submitChatbotAnswers({
-            userId,
-            answers: answers.slice(1),
-        });
+        try {
+            const submittedAnswers = answers.slice(1);
+            const result = await submitChatbotAnswers({
+                userId,
+                answers: submittedAnswers,
+            });
 
-        // ⭐ EVENT LOGGING HERE
-        await createEvent({
-            userId,
-            type: 'chatbot',
-            data: {
-                answers: answers.slice(1),
+            // Fire-and-forget: a logging failure must not fail the submission.
+            logEvent(userId, 'chatbot', {
+                answers: submittedAnswers,
                 response: result,
-            },
-        });
+            });
 
-        setIsComplete(true);
-    } catch (err) {
-        const message =
-            err?.response?.data?.message ||
-            err?.response?.data ||
-            err?.message ||
-            'Submission failed.';
-        setSubmissionError(String(message));
-    } finally {
-        setIsSubmitting(false);
-    }
-}, [answers, userId]);
+            setIsComplete(true);
+        } catch (err) {
+            setSubmissionError(getErrorMessage(err, 'Submission failed.'));
+        } finally {
+            setIsSubmitting(false);
+        }
+    }, [answers, userId]);
+
     const handleCancel = useCallback(() => {
         setIsDismissed(true);
     }, []);

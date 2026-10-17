@@ -12,7 +12,7 @@ public static class Extensions
         {
             return null;
         }
-        return new StudentView(user.UserName, user.Email.Encode(), user.FullName, user.FacultyNumber, user.Base64EncodePicture);
+        return new StudentView(user.Id, user.UserName, user.Email.Encode(), user.FullName, user.FacultyNumber, user.Base64EncodePicture);
     }
 
     public static string? Encode(this string? value)

@@ -1,0 +1,104 @@
+@model IReadOnlyList<StudentsManager.Mvc.Domain.Views.PowerUpAnalyses.PowerUpAnalysisOverviewView>
+@using StudentsManager.Mvc.Services.Surveys
+@{
+    ViewData["Title"] = "Power Up Analysis";
+}
+
+@section Styles {
+    <style>
+        .powerup-page { max-width: 900px; margin: 0 auto; padding: 48px 24px 80px; }
+        .powerup-page .soge-title { font-size: 36px; line-height: 1.2; margin: 0 0 24px; }
+        .powerup-page .red { color: #b16f5f; }
+        .powerup-page .soge-btn { display: inline-flex; min-width: 180px; padding: 0 16px; margin: 0 0 16px; }
+        .powerup-user { border: 1px solid #e3e3e3; border-radius: 6px; background: #fff; padding: 20px 24px; margin-bottom: 24px; }
+        .powerup-user-name { font-size: 24px; margin: 0 0 16px; overflow-wrap: anywhere; }
+        .powerup-section + .powerup-section { border-top: 1px solid #e3e3e3; padding-top: 16px; margin-top: 16px; }
+        .powerup-section h3 { font-size: 18px; margin: 0 0 8px; }
+        .powerup-section h4 { font-size: 16px; line-height: 1.4; margin: 12px 0 4px; }
+        .powerup-section p { margin: 0; white-space: pre-line; overflow-wrap: anywhere; line-height: 1.5; }
+        .powerup-missing { color: #6f6f6f; }
+        .powerup-trait { display: flex; justify-content: space-between; gap: 16px; margin-top: 4px; }
+        .powerup-trait.strongest { color: #b16f5f; font-weight: bold; }
+        .powerup-picture { display: block; width: 100%; max-width: 360px; height: 240px; object-fit: contain; background: #e3e3e3; border-radius: 6px; margin-bottom: 12px; }
+    </style>
+}
+
+<div class="total-wrap-content">
+    <main class="powerup-page">
+        <h1 class="soge-title">Power Up <span class="red">Analysis</span></h1>
+
+        @if (Model.Count == 0)
+        {
+            <p class="powerup-missing">No survey or personality test data yet.</p>
+        }
+
+        @foreach (var item in Model)
+        {
+            <article class="powerup-user">
+                <h2 class="powerup-user-name"><span class="red">@item.FullName</span></h2>
+
+                <section class="powerup-section">
+                    <h3>Survey</h3>
+                    @if (item.Survey == null)
+                    {
+                        <p class="powerup-missing">Not submitted.</p>
+                    }
+                    else
+                    {
+                        <img class="powerup-picture" src="@item.Survey.PicturePath" alt="Picture uploaded by @item.FullName" loading="lazy" />
+                        <h4>@SurveyConstants.PreviousExperienceQuestion</h4>
+                        <p>@item.Survey.PreviousExperience</p>
+                        <h4>@SurveyConstants.CourseExpectationsQuestion</h4>
+                        <p>@item.Survey.CourseExpectations</p>
+                        <h4>@SurveyConstants.HobbyQuestion</h4>
+                        <p>@item.Survey.Hobby</p>
+                        <h4>@SurveyConstants.DreamProjectQuestion</h4>
+                        <p>@item.Survey.DreamProject</p>
+                    }
+                </section>
+
+                <section class="powerup-section">
+                    <h3>Personality test</h3>
+                    @if (item.Personality == null)
+                    {
+                        <p class="powerup-missing">Not completed.</p>
+                    }
+                    else
+                    {
+                        @foreach (var score in item.Personality.Scores)
+                        {
+                            <div class="powerup-trait @(score.IsStrongest ? "strongest" : "")">
+                                <span>@score.Name</span>
+                                <span>@score.Score / @score.MaxScore (@score.Percentage.ToString("0.##")%)</span>
+                            </div>
+                        }
+                        @if (!string.IsNullOrWhiteSpace(item.Personality.FeedbackComment))
+                        {
+                            <h4>Feedback@(item.Personality.FeedbackRating is { } rating ? $" ({rating}/5)" : "")</h4>
+                            <p>@item.Personality.FeedbackComment</p>
+                        }
+                    }
+                </section>
+
+                <section class="powerup-section">
+                    <h3>Analysis</h3>
+                    @if (item.Analysis != null)
+                    {
+                        <p>@item.Analysis.AnalysisResult</p>
+                    }
+                    else if (item.CanGenerate)
+                    {
+                        <form asp-action="GenerateFromView" method="post">
+                            <input type="hidden" name="userId" value="@item.UserId" />
+                            <button type="submit" class="soge-btn">Generate</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <p class="powerup-missing">The survey and the personality test must be completed first.</p>
+                    }
+                </section>
+            </article>
+        }
+    </main>
+</div>

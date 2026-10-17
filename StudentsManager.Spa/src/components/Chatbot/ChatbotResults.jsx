@@ -1,5 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
+import { getErrorMessage } from '../../services/apiConfig';
 import { getExaminationAnswers } from '../../services/chatbotService';
 import ChatbotResultCard from './ChatbotResultCard';
 
@@ -29,12 +30,7 @@ function ChatbotResults() {
             );
             setResults(sorted);
         } catch (err) {
-            const message =
-                err?.response?.data?.message ||
-                err?.response?.data ||
-                err?.message ||
-                'Failed to load results.';
-            setError(String(message));
+            setError(getErrorMessage(err, 'Failed to load results.'));
         } finally {
             setIsLoading(false);
         }

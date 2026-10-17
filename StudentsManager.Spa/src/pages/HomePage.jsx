@@ -8,12 +8,11 @@ import {
     faClipboardCheck,
 } from '@fortawesome/free-solid-svg-icons';
 import robotImage from '../assets/home/robot.png';
+import { useAuth } from '../context/AuthContext';
 import { getProfile } from '../services/userService';
 import './HomePage.css';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
-
-const PROFILE_ID = '022a6007-f33c-47c3-b811-08de88b121f2';
 
 const FALLBACK_STATS = {
     mastery: 75,
@@ -122,6 +121,7 @@ const SkeletonEngineBox = () => (
 // ─── Main Component ───────────────────────────────────────────────────────────
 
 function HomePage() {
+    const { userId } = useAuth();
     const canvasRef = useRef(null);
     const subtitleRef = useRef(null);
     const containerRef = useRef(null);
@@ -212,9 +212,9 @@ function HomePage() {
         if (!subtitleRef.current) return;
         const typed = new Typed(subtitleRef.current, {
             strings: [
-                'Your learning hub — powered by AI, built for curious minds. v11',
-                'Track progress, solve challenges, and grow with your peers. v11',
-                'Everything you need to go from beginner to builder. v11',
+                'Your learning hub — powered by AI, built for curious minds.',
+                'Track progress, solve challenges, and grow with your peers.',
+                'Everything you need to go from beginner to builder.',
             ],
             typeSpeed: 38,
             backSpeed: 18,
@@ -259,9 +259,11 @@ function HomePage() {
         };
     }, []);
 
-    // Fetch real stats from API
+    // Fetch real stats for the logged-in student; anonymous visitors see generic fallback stats.
     useEffect(() => {
-        getProfile(PROFILE_ID)
+        if (!userId) return;
+
+        getProfile(userId)
             .then((data) => {
                 const questions = data.testQuestions ?? [];
 
@@ -299,7 +301,10 @@ function HomePage() {
                 });
             })
             .catch(() => setStats(FALLBACK_STATS));
-    }, []);
+    }, [userId]);
+
+    // Anonymous visitors never fetch, so they see the fallback immediately instead of a loading skeleton.
+    const displayStats = userId ? stats : FALLBACK_STATS;
 
     // Konami code easter egg — useRef tracks index without triggering re-renders
     useEffect(() => {
@@ -408,11 +413,11 @@ function HomePage() {
                         Learning Core
                     </h2>
                     <p className='zone-sub'>
-                        {stats === null ? 'Loading live data…' : 'Real-time neural progress tracking'}
+                        {displayStats === null ? 'Loading live data…' : 'Real-time neural progress tracking'}
                     </p>
                 </div>
 
-                {stats === null ? (
+                {displayStats === null ? (
                     // ── Skeleton loading state
                     <div className='engine-grid' aria-label='Loading statistics' aria-busy='true'>
                         <SkeletonEngineBox />
@@ -426,24 +431,24 @@ function HomePage() {
                             <div className='box-top'>
                                 <span className='box-label'>Algorithm Mastery</span>
                                 <span className='box-percent'>
-                                    <AnimatedNumber value={stats.mastery} />%
+                                    <AnimatedNumber value={displayStats.mastery} />%
                                 </span>
                             </div>
                             <div
                                 className='box-bar'
                                 role='progressbar'
-                                aria-valuenow={stats.mastery}
+                                aria-valuenow={displayStats.mastery}
                                 aria-valuemin={0}
                                 aria-valuemax={100}
                                 aria-label='Algorithm Mastery progress'
                             >
                                 <div
                                     className='box-fill'
-                                    style={{ '--target-width': `${stats.masteryBar}%` }}
+                                    style={{ '--target-width': `${displayStats.masteryBar}%` }}
                                 ></div>
                             </div>
                             <div className='box-bottom'>
-                                <span className='box-context'>{stats.masteryLabel}</span>
+                                <span className='box-context'>{displayStats.masteryLabel}</span>
                                 <span className='box-goal'>Hit 80% to earn the "Coder" badge</span>
                             </div>
                         </div>
@@ -452,24 +457,24 @@ function HomePage() {
                             <div className='box-top'>
                                 <span className='box-label'>Logic Precision</span>
                                 <span className='box-percent'>
-                                    <AnimatedNumber value={stats.precision} />%
+                                    <AnimatedNumber value={displayStats.precision} />%
                                 </span>
                             </div>
                             <div
                                 className='box-bar'
                                 role='progressbar'
-                                aria-valuenow={stats.precision}
+                                aria-valuenow={displayStats.precision}
                                 aria-valuemin={0}
                                 aria-valuemax={100}
                                 aria-label='Logic Precision progress'
                             >
                                 <div
                                     className='box-fill highlight'
-                                    style={{ '--target-width': `${stats.precisionBar}%` }}
+                                    style={{ '--target-width': `${displayStats.precisionBar}%` }}
                                 ></div>
                             </div>
                             <div className='box-bottom'>
-                                <span className='box-context'>{stats.precisionLabel}</span>
+                                <span className='box-context'>{displayStats.precisionLabel}</span>
                                 <span className='box-goal'>Reach 95% for "Flawless" status</span>
                             </div>
                         </div>
@@ -478,24 +483,24 @@ function HomePage() {
                             <div className='box-top'>
                                 <span className='box-label'>Total Uptime</span>
                                 <span className='box-percent'>
-                                    <AnimatedNumber value={stats.uptime} />h
+                                    <AnimatedNumber value={displayStats.uptime} />h
                                 </span>
                             </div>
                             <div
                                 className='box-bar'
                                 role='progressbar'
-                                aria-valuenow={stats.uptimeBar}
+                                aria-valuenow={displayStats.uptimeBar}
                                 aria-valuemin={0}
                                 aria-valuemax={100}
                                 aria-label='Total Uptime progress'
                             >
                                 <div
                                     className='box-fill gold'
-                                    style={{ '--target-width': `${stats.uptimeBar}%` }}
+                                    style={{ '--target-width': `${displayStats.uptimeBar}%` }}
                                 ></div>
                             </div>
                             <div className='box-bottom'>
-                                <span className='box-context'>{stats.uptimeLabel}</span>
+                                <span className='box-context'>{displayStats.uptimeLabel}</span>
                                 <span className='box-goal'>Keep it up — "Senior" level is within reach</span>
                             </div>
                         </div>
@@ -540,12 +545,6 @@ function HomePage() {
                                     {timeLeft}
                                 </span>
                             </div>
-                            <button
-                                className='solve-btn'
-                                aria-label='Start solving the daily challenge'
-                            >
-                                INITIALIZE SOLVE
-                            </button>
                         </div>
                     </div>
                 </div>
@@ -603,19 +602,6 @@ function HomePage() {
                         </div>
                     </article>
                 </div>
-                <div className='achievements-actions'>
-                    <button className='hp-btn timeline-btn'>View Full Timeline</button>
-                </div>
-            </section>
-
-            {/* ── Final CTA ─────────────────────────────────────────────────── */}
-            <section className='hp-section hp-cta fade-in-section' aria-label='Call to action'>
-                <h2 className='hero-title' style={{ textAlign: 'center', fontSize: '3rem' }}>
-                    Ready to jump in?
-                </h2>
-                <button className='cta-main-btn' aria-label='Get started now'>
-                    GET STARTED
-                </button>
             </section>
 
             {/* ── Konami Easter Egg Overlay ─────────────────────────────────── */}

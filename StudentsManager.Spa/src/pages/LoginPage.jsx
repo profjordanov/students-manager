@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
+import { getErrorMessage } from '../services/apiConfig';
 import { login as loginUser } from '../services/userService';
 
 function LoginPage() {
@@ -60,13 +61,7 @@ function LoginPage() {
             login(String(userId));
             navigate('/');
         } catch (err) {
-            const message =
-                err?.response?.data?.message ||
-                err?.response?.data ||
-                err?.message ||
-                'Login failed.';
-
-            setError(String(message));
+            setError(getErrorMessage(err, 'Login failed.'));
         } finally {
             setIsSubmitting(false);
         }

@@ -1,0 +1,88 @@
+@model StudentsManager.Mvc.Domain.Inputs.Surveys.SurveySubmission
+
+@section Styles {
+    <style>
+        .survey-page { max-width: 800px; margin: 0 auto; padding: 48px 24px 80px; }
+        .survey-page .soge-title { font-size: 36px; line-height: 1.2; margin: 0 0 32px; }
+        .survey-page .red { color: #b16f5f; }
+        .survey-field { margin-bottom: 32px; }
+        .survey-page .soge-question { font-size: 20px; line-height: 1.4; max-width: none; padding: 0; margin: 0 0 12px; }
+        .survey-page .soge-input-wrapper { width: 100%; margin: 0; display: block; }
+        .survey-page .soge-input { width: 100%; height: auto; display: block; margin: 0; }
+        .survey-page textarea { box-sizing: border-box; width: 100%; min-height: 140px; border: 1px solid #e3e3e3; padding: 14px 16px 20px; font: inherit; line-height: 1.5; resize: vertical; }
+        .survey-page .soge-input:focus-within .soge-input-line { background: #b16f5f; height: 2px; }
+        .survey-page .survey-file-input { display: block; max-width: 100%; margin-top: 12px; }
+        .survey-page .survey-hint { display: block; color: #6f6f6f; margin-top: 8px; }
+        .survey-page .field-validation-error, .survey-page .validation-summary-errors { display: block; color: #b16f5f; margin-top: 8px; }
+        .survey-page .input-validation-error { border-color: #b16f5f; }
+        .survey-page .soge-btn { min-width: 180px; padding: 0 16px; }
+    </style>
+}
+
+<div class="total-wrap-content">
+    <main class="survey-page">
+        <h1 class="soge-title">Student <span class="red">survey</span></h1>
+        <form asp-controller="Survey" asp-action="Index" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly"></div>
+
+            <div class="survey-field">
+                <label asp-for="PreviousExperience" class="soge-question"></label>
+                <div class="soge-input-wrapper">
+                    <div class="soge-input">
+                        <textarea asp-for="PreviousExperience" maxlength="2000" rows="5"></textarea>
+                        <div class="soge-input-line"></div>
+                    </div>
+                    <span asp-validation-for="PreviousExperience"></span>
+                </div>
+            </div>
+
+            <div class="survey-field">
+                <label asp-for="CourseExpectations" class="soge-question"></label>
+                <div class="soge-input-wrapper">
+                    <div class="soge-input">
+                        <textarea asp-for="CourseExpectations" maxlength="2000" rows="5"></textarea>
+                        <div class="soge-input-line"></div>
+                    </div>
+                    <span asp-validation-for="CourseExpectations"></span>
+                </div>
+            </div>
+
+            <div class="survey-field">
+                <label asp-for="Hobby" class="soge-question"></label>
+                <div class="soge-input-wrapper">
+                    <div class="soge-input">
+                        <textarea asp-for="Hobby" maxlength="2000" rows="5"></textarea>
+                        <div class="soge-input-line"></div>
+                    </div>
+                    <span asp-validation-for="Hobby"></span>
+                </div>
+            </div>
+
+            <div class="survey-field">
+                <label asp-for="DreamProject" class="soge-question"></label>
+                <div class="soge-input-wrapper">
+                    <div class="soge-input">
+                        <textarea asp-for="DreamProject" maxlength="2000" rows="5"></textarea>
+                        <div class="soge-input-line"></div>
+                    </div>
+                    <span asp-validation-for="DreamProject"></span>
+                </div>
+            </div>
+
+            <div class="survey-field">
+                <label asp-for="Picture" class="soge-question"></label>
+                <input asp-for="Picture" type="file" accept=".jpg,.jpeg,.png,.webp" class="survey-file-input" />
+                <small class="survey-hint">JPG, PNG or WEBP; max 5 MB.</small>
+                <span asp-validation-for="Picture"></span>
+            </div>
+
+            <div class="soge-btn-wrapper">
+                <button type="submit" class="soge-btn">Submit survey</button>
+            </div>
+        </form>
+    </main>
+</div>
+
+@section Scripts {
+    @{ await Html.RenderPartialAsync("_ValidationScriptsPartial"); }
+}

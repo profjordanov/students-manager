@@ -15,3 +15,10 @@ export const updatePicture = async (data) => {
     const res = await axios.put(`${baseUrl}/students/picture`, data);
     return res.data;
 };
+
+export const getStudents = async () => {
+    const res = await axios.get(`${baseUrl}/students/`, {
+        auth: { username: 'guest', password: 'guest' },
+    });
+    return res.data;
+};

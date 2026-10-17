@@ -1,0 +1,122 @@
+@using System.Globalization
+@using StudentsManager.Mvc.Services.PersonalityTests
+@model StudentsManager.Mvc.Domain.Views.PersonalityTests.PersonalityTestResultView?
+@{
+    ViewData["Title"] = "Personality test";
+    var alreadyCompleted = ViewData["AlreadyCompleted"] is true;
+    var strongest = Model?.Scores.Where(score => score.IsStrongest).ToList() ?? [];
+    var strongestNames = string.Join(" ", strongest.Select(score => "#" + score.Name.ToLowerInvariant()));
+}
+
+@section Styles {
+    <style>
+        .personality-result { max-width: 800px; margin: 0 auto; padding: 0 24px; }
+        .personality-trait { border: 1px solid #e3e3e3; border-radius: 6px; background: #fff; padding: 20px 24px; margin-bottom: 16px; }
+        .personality-trait.strongest { border-color: #b16f5f; }
+        .personality-trait-header { display: flex; justify-content: space-between; align-items: baseline; gap: 16px; }
+        .personality-trait-name { font-size: 22px; margin: 0; }
+        .personality-trait.strongest .personality-trait-name { color: #b16f5f; }
+        .personality-trait-score { color: #6f6f6f; white-space: nowrap; }
+        .personality-trait-bar { height: 8px; background: #e3e3e3; margin: 12px 0; }
+        .personality-trait-bar span { display: block; height: 100%; background: #b16f5f; }
+        .personality-trait-description { margin: 0; line-height: 1.5; }
+        .personality-notice { border-left: 4px solid #b16f5f; background: #fff; padding: 16px 24px; margin: 0 0 24px; line-height: 1.5; }
+        .personality-result .soge-btn { display: inline-flex; min-width: 180px; padding: 0 16px; margin-top: 16px; }
+        .personality-feedback { border: 1px solid #e3e3e3; border-radius: 6px; background: #fff; padding: 20px 24px; margin-bottom: 16px; }
+        .personality-feedback h3 { margin: 0 0 8px; font-size: 22px; }
+        .personality-feedback fieldset { border: 0; padding: 0; margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px 20px; }
+        .personality-feedback textarea { width: 100%; min-height: 90px; padding: 8px; border: 1px solid #e3e3e3; border-radius: 4px; box-sizing: border-box; font: inherit; }
+        .personality-feedback .feedback-success { color: #2e7d32; }
+        .personality-feedback .feedback-error { color: #c62828; }
+    </style>
+}
+
+<div class="total-wrap-content">
+    <div class="template-top-section">
+        <div class="bg-image" style="background-image: url('@Url.Content("~/images/test/top-bg.jpg")')"></div>
+        <div class="main-wrap-content">
+            <div class="template-top-grid anim-block">
+                <div class="image-item anim-elem left-visibility">
+                    <div class="boy-image">
+                        <img src="~/images/test/boy.png" alt="boy" class="template-image">
+                    </div>
+                </div>
+                <div class="content-item anim-elem top-visibility">
+                    <div class="content-box">
+                        <div class="content-box-inner">
+                            @if (Model != null)
+                            {
+                                <p>
+                                    @(strongest.Count == 1 ? "Твоята силна страна е" : "Твоите силни страни са")
+                                    <br/><strong>@strongestNames</strong>
+                                </p>
+                            }
+                            else
+                            {
+                                <p>
+                                    Все още не си <br/><strong>завършил/а теста</strong>
+                                </p>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="personality-result">
+        @if (Model != null)
+        {
+            if (alreadyCompleted)
+            {
+                <p class="personality-notice">Вече си направил/а теста. Тестът може да бъде направен само веднъж, затова тук виждаш запазения си резултат.</p>
+            }
+            foreach (var score in Model.Scores)
+            {
+                var percentage = score.Percentage.ToString("0.##", CultureInfo.InvariantCulture);
+                <div class="personality-trait @(score.IsStrongest ? "strongest" : null)">
+                    <div class="personality-trait-header">
+                        <h3 class="personality-trait-name">@score.Name</h3>
+                        <span class="personality-trait-score">@percentage% (@score.Score от @score.MaxScore)</span>
+                    </div>
+                    <div class="personality-trait-bar">
+                        <span style="width: @percentage%"></span>
+                    </div>
+                    <p class="personality-trait-description">@score.Description</p>
+                </div>
+            }
+
+            <form asp-action="Feedback" method="post" class="personality-feedback">
+                <h3>What do you think about the result?</h3>
+                <p>Please, provide your feedback in English below.</p>
+                @if (TempData["FeedbackSaved"] is true)
+                {
+                    <p class="feedback-success">Благодарим за обратната връзка!</p>
+                }
+                @if (TempData["FeedbackError"] is string feedbackError)
+                {
+                    <p class="feedback-error">@feedbackError</p>
+                }
+                <fieldset>
+                    @for (var rating = PersonalityTestConstants.MinFeedbackRating; rating <= PersonalityTestConstants.MaxFeedbackRating; rating++)
+                    {
+                        <label>
+                            <input type="radio" name="Rating" value="@rating" required checked="@(Model.FeedbackRating == rating)" />
+                            @rating
+                        </label>
+                    }
+                </fieldset>
+                <textarea name="Comment" maxlength="1000" placeholder="Comment (optional)">@Model.FeedbackComment</textarea>
+                <button type="submit" class="soge-btn">@(Model.FeedbackRating.HasValue ? "Update Feedback" : "Submit")</button>
+            </form>
+        }
+        else
+        {
+            <a asp-action="Index" class="soge-btn">Започни теста</a>
+        }
+    </section>
+
+    <div class="templete-bottom-section">
+        <div class="bg-image" style="background-image: url('@Url.Content("~/images/test/bottom-bg.jpg")')"></div>
+    </div>
+</div>
