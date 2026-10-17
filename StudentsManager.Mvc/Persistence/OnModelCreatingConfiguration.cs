@@ -264,6 +264,200 @@ namespace StudentsManager.Mvc.Persistence
                 .IsRequired();
         }
 
+        public static void ConfigureSurveys(this ModelBuilder builder)
+        {
+            builder
+                .Entity<Survey>()
+                .HasIndex(survey => survey.UserId)
+                .IsUnique();
+
+            builder
+                .Entity<Survey>()
+                .HasOne(survey => survey.User)
+                .WithMany(user => user.Surveys)
+                .HasForeignKey(survey => survey.UserId)
+                .IsRequired();
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.PreviousExperience)
+                .IsRequired()
+                .HasMaxLength(2000)
+                .IsUnicode()
+                .HasComment("Previous experience with programming");
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.CourseExpectations)
+                .IsRequired()
+                .HasMaxLength(2000)
+                .IsUnicode()
+                .HasComment("Expectations for the course");
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.Hobby)
+                .IsRequired()
+                .HasMaxLength(2000)
+                .IsUnicode()
+                .HasComment("Hobbies and interests");
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.DreamProject)
+                .IsRequired()
+                .HasMaxLength(2000)
+                .IsUnicode()
+                .HasComment("Dream project");
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.FileName)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.Path)
+                .IsRequired()
+                .HasMaxLength(500);
+
+            builder
+                .Entity<Survey>()
+                .Property(survey => survey.Extension)
+                .IsRequired()
+                .HasMaxLength(100);
+        }
+
+        public static void ConfigurePersonalityTestChoices(this ModelBuilder builder)
+        {
+            builder
+                .Entity<PersonalityTestChoice>()
+                .HasOne(choice => choice.User)
+                .WithMany(user => user.PersonalityTestChoices)
+                .HasForeignKey(choice => choice.UserId)
+                .IsRequired();
+
+            builder
+                .Entity<PersonalityTestChoice>()
+                .Property(choice => choice.QuestionNumber)
+                .HasComment("Personality test question number");
+
+            builder
+                .Entity<PersonalityTestChoice>()
+                .Property(choice => choice.AnswerNumber)
+                .HasComment("Chosen statement of the question (1 or 2)");
+
+            builder
+                .Entity<PersonalityTestChoice>()
+                .Property(choice => choice.Trait)
+                .HasConversion<string>()
+                .HasMaxLength(20)
+                .HasComment("Personality trait of the chosen statement");
+        }
+
+        public static void ConfigurePowerUpAnalyses(this ModelBuilder builder)
+        {
+            builder
+                .Entity<PowerUpAnalysis>()
+                .HasIndex(analysis => analysis.UserId)
+                .IsUnique();
+
+            builder
+                .Entity<PowerUpAnalysis>()
+                .HasOne(analysis => analysis.User)
+                .WithMany(user => user.PowerUpAnalyses)
+                .HasForeignKey(analysis => analysis.UserId)
+                .IsRequired();
+
+            builder
+                .Entity<PowerUpAnalysis>()
+                .Property(analysis => analysis.AnalysisResult)
+                .IsRequired()
+                .IsUnicode()
+                .HasComment("Analysis based on the user's survey and personality test");
+        }
+
+        public static void ConfigurePersonalityTestResults(this ModelBuilder builder)
+        {
+            builder
+                .Entity<PersonalityTestResult>()
+                .HasIndex(result => result.UserId)
+                .IsUnique();
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .HasOne(result => result.User)
+                .WithMany(user => user.PersonalityTestResults)
+                .HasForeignKey(result => result.UserId)
+                .IsRequired();
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.ActionScore)
+                .HasComment("Number of chosen Action statements");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.ProcessScore)
+                .HasComment("Number of chosen Process statements");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.PeopleScore)
+                .HasComment("Number of chosen People statements");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.IdeaScore)
+                .HasComment("Number of chosen Idea statements");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.ActionPercentage)
+                .HasPrecision(5, 2)
+                .HasComment("Action score as a percentage of the maximum Action score");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.ProcessPercentage)
+                .HasPrecision(5, 2)
+                .HasComment("Process score as a percentage of the maximum Process score");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.PeoplePercentage)
+                .HasPrecision(5, 2)
+                .HasComment("People score as a percentage of the maximum People score");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.IdeaPercentage)
+                .HasPrecision(5, 2)
+                .HasComment("Idea score as a percentage of the maximum Idea score");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.CompletedAtUtc)
+                .HasComment("When the user completed the test");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.FeedbackRating)
+                .HasComment("How accurately the result matches the user, from 1 to 5");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.FeedbackComment)
+                .HasMaxLength(1000)
+                .HasComment("Optional free-text feedback about the result");
+
+            builder
+                .Entity<PersonalityTestResult>()
+                .Property(result => result.FeedbackSubmittedAtUtc)
+                .HasComment("When the user last submitted feedback");
+        }
+
         public static void ConfigureCourses(this ModelBuilder builder)
         {
             builder

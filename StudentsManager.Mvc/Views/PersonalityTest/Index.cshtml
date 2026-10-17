@@ -1,0 +1,94 @@
+@using StudentsManager.Mvc.Domain.Views.PersonalityTests
+@using StudentsManager.Mvc.Services.PersonalityTests
+@model IReadOnlyList<PersonalityTestQuestion>
+@{
+    ViewData["Title"] = "Personality test";
+}
+
+<div class="total-wrap-content">
+    <div class="template-top-section">
+        <div class="bg-image" style="background-image: url('@Url.Content("~/images/test/top-bg.jpg")')"></div>
+        <div class="main-wrap-content">
+            <div class="template-top-grid anim-block">
+                <div class="image-item anim-elem left-visibility">
+                    <div class="boy-image">
+                        <img src="~/images/test/boy.png" alt="boy" class="template-image">
+                    </div>
+                </div>
+                <div class="content-item anim-elem top-visibility">
+                    <div class="content-box">
+                        <div class="content-box-inner">
+                            <p>
+                                Открий твоите <br/><strong>#силни страни</strong>
+                            </p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <section class="section-test-layout anim-block">
+        <div class="main-wrap-content anim-elem top delay-03">
+            <div class="section-test-layout-box cf">
+                <div class="test-col">
+                    <div class="section-test-layout-content">
+                        <form asp-action="Choice" asp-antiforgery="false" method="post" id="test" data-complete-url="@Url.Action("Complete")" data-result-url="@Url.Action("Result")">
+                            <div class="cover-div"></div>
+                            @* The token must precede the questions: site.js treats the element after the answered question as the next question. *@
+                            @Html.AntiForgeryToken()
+                            @foreach (var question in Model)
+                            {
+                                <div class="question section-test-layout-question @(question.HasImages ? "images-question" : "text-question") @(question == Model[0] ? "active" : null)">
+                                    <div class="section-test-layout-title medium">@PersonalityTestConstants.QuestionPrompt</div>
+                                    <div class="section-test-layout-answer cf">
+                                        @for (var i = 0; i < question.Answers.Count; i++)
+                                        {
+                                            var answer = question.Answers[i];
+                                            var trait = answer.Trait.ToString().ToLowerInvariant();
+                                            if (question.HasImages)
+                                            {
+                                                <div class="answer question-item-img">
+                                                    <h3 class="new-test-title">@answer.Text</h3>
+                                                    <label class="container">
+                                                        <input type="radio" data-answer="@(i + 1)" data-question="@question.Number"
+                                                               name="question-@question.Number" value="@trait">
+                                                        <img src="@Url.Content($"~/images/test/{answer.ImageFileName}")"
+                                                             alt="@answer.Text" class="responsive question-item-bckg">
+                                                    </label>
+                                                </div>
+                                            }
+                                            else
+                                            {
+                                                <div class="answer question-item-onlyText">
+                                                    <label class="container">
+                                                        <input type="radio" data-answer="@(i + 1)" data-question="@question.Number"
+                                                               name="question-@question.Number" value="@trait">
+                                                        <span class="only-text-content">
+                                                            <span class="only-text-content-wrap">
+                                                                <span class="checkmark"></span>
+                                                                <span class="question-item-txt"><span>@answer.Text</span></span>
+                                                            </span>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            }
+                                        }
+                                    </div>
+                                </div>
+                            }
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <div class="templete-bottom-section">
+        <div class="bg-image" style="background-image: url('@Url.Content("~/images/test/bottom-bg.jpg")')"></div>
+    </div>
+</div>
+
+@section Scripts {
+    <script src="~/js/personality-test.js" asp-append-version="true"></script>
+}

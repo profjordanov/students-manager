@@ -35,7 +35,7 @@ function ChatbotResultCard({ result, form, createdOn, wasSuccessfullyProcessed, 
                         <p className="soge-result-fallback">Could not load details.</p>
                     )}
 
-                    {result ? (
+                    {Array.isArray(result) ? (
                         <ul className="soge-result-qa ul-reset">
                             {result.map((item, i) => (
                                 <li key={i} className="soge-result-qa-item">

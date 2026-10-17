@@ -15,9 +15,12 @@ using StudentsManager.Mvc.Services.Forum;
 using StudentsManager.Mvc.Services.Homeworks;
 using StudentsManager.Mvc.Services.Messaging;
 using StudentsManager.Mvc.Services.Options;
+using StudentsManager.Mvc.Services.PersonalityTests;
+using StudentsManager.Mvc.Services.PowerUpAnalyses;
 using StudentsManager.Mvc.Services.Statistics;
 using StudentsManager.Mvc.Services.Storage;
 using StudentsManager.Mvc.Services.Students;
+using StudentsManager.Mvc.Services.Surveys;
 using StudentsManager.Mvc.Services.Tests;
 using StudentsManager.Mvc.Services.Topics;
 using StudentsManager.Mvc.Settings;
@@ -125,6 +128,12 @@ namespace StudentsManager.Mvc.Configurations
             services.AddScoped<IForumService, ForumService>();
 
             services.AddScoped<ICourseworksService, CourseworksService>();
+
+            services.AddScoped<ISurveysService, SurveysService>();
+
+            services.AddScoped<IPersonalityTestsService, PersonalityTestsService>();
+
+            services.AddScoped<IPowerUpAnalysesService, PowerUpAnalysesService>();
 
             services.AddScoped<IExaminationAnswersService, ExaminationAnswersService>();
 

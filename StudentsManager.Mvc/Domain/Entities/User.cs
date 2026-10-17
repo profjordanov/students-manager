@@ -19,6 +19,10 @@ namespace StudentsManager.Mvc.Domain.Entities
         public ICollection<ForumComment>? ForumComments { get; set; }
 
         public ICollection<UserCoursework>? Courseworks { get; set; }
+        public ICollection<Survey>? Surveys { get; set; }
+        public ICollection<PersonalityTestChoice>? PersonalityTestChoices { get; set; }
+        public ICollection<PersonalityTestResult>? PersonalityTestResults { get; set; }
+        public ICollection<PowerUpAnalysis>? PowerUpAnalyses { get; set; }
 
         public DateTime CreatedOn { get; set; }
 

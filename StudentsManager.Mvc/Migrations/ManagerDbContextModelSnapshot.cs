@@ -17,7 +17,7 @@ namespace StudentsManager.Mvc.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "8.0.0")
+                .HasAnnotation("ProductVersion", "10.0.8")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -364,6 +364,138 @@ namespace StudentsManager.Mvc.Migrations
                     b.ToTable("Homeworks");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.PersonalityTestChoice", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<int>("AnswerNumber")
+                        .HasColumnType("int")
+                        .HasComment("Chosen statement of the question (1 or 2)");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<int>("QuestionNumber")
+                        .HasColumnType("int")
+                        .HasComment("Personality test question number");
+
+                    b.Property<string>("Trait")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)")
+                        .HasComment("Personality trait of the chosen statement");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId");
+
+                    b.ToTable("PersonalityTestChoices");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.PersonalityTestResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<decimal>("ActionPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasComment("Action score as a percentage of the maximum Action score");
+
+                    b.Property<int>("ActionScore")
+                        .HasColumnType("int")
+                        .HasComment("Number of chosen Action statements");
+
+                    b.Property<DateTimeOffset>("CompletedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasComment("When the user completed the test");
+
+                    b.Property<string>("FeedbackComment")
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasComment("Optional free-text feedback about the result");
+
+                    b.Property<int?>("FeedbackRating")
+                        .HasColumnType("int")
+                        .HasComment("How accurately the result matches the user, from 1 to 5");
+
+                    b.Property<DateTimeOffset?>("FeedbackSubmittedAtUtc")
+                        .HasColumnType("datetimeoffset")
+                        .HasComment("When the user last submitted feedback");
+
+                    b.Property<decimal>("IdeaPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasComment("Idea score as a percentage of the maximum Idea score");
+
+                    b.Property<int>("IdeaScore")
+                        .HasColumnType("int")
+                        .HasComment("Number of chosen Idea statements");
+
+                    b.Property<decimal>("PeoplePercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasComment("People score as a percentage of the maximum People score");
+
+                    b.Property<int>("PeopleScore")
+                        .HasColumnType("int")
+                        .HasComment("Number of chosen People statements");
+
+                    b.Property<decimal>("ProcessPercentage")
+                        .HasPrecision(5, 2)
+                        .HasColumnType("decimal(5,2)")
+                        .HasComment("Process score as a percentage of the maximum Process score");
+
+                    b.Property<int>("ProcessScore")
+                        .HasColumnType("int")
+                        .HasComment("Number of chosen Process statements");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("PersonalityTestResults");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.PowerUpAnalysis", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnalysisResult")
+                        .IsRequired()
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(max)")
+                        .HasComment("Analysis based on the user's survey and personality test");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("PowerUpAnalyses");
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.QuestionOption", b =>
                 {
                     b.Property<int>("Id")
@@ -501,6 +633,71 @@ namespace StudentsManager.Mvc.Migrations
                     b.HasIndex("StudentCourseExaminationId");
 
                     b.ToTable("StudentExaminationUploads");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.Survey", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("CourseExpectations")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasComment("Expectations for the course");
+
+                    b.Property<DateTimeOffset>("CreatedAtUtc")
+                        .HasColumnType("datetimeoffset");
+
+                    b.Property<string>("DreamProject")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasComment("Dream project");
+
+                    b.Property<string>("Extension")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("FileName")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("Hobby")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasComment("Hobbies and interests");
+
+                    b.Property<string>("Path")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)");
+
+                    b.Property<string>("PreviousExperience")
+                        .IsRequired()
+                        .HasMaxLength(2000)
+                        .IsUnicode(true)
+                        .HasColumnType("nvarchar(2000)")
+                        .HasComment("Previous experience with programming");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("UserId")
+                        .IsUnique();
+
+                    b.ToTable("Surveys");
                 });
 
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.TestQuestion", b =>
@@ -865,6 +1062,39 @@ namespace StudentsManager.Mvc.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.PersonalityTestChoice", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany("PersonalityTestChoices")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.PersonalityTestResult", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany("PersonalityTestResults")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.PowerUpAnalysis", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany("PowerUpAnalyses")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.QuestionOption", b =>
                 {
                     b.HasOne("StudentsManager.Mvc.Domain.Entities.TestQuestion", "TestQuestion")
@@ -904,6 +1134,17 @@ namespace StudentsManager.Mvc.Migrations
                         .IsRequired();
 
                     b.Navigation("StudentCourseExamination");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.Survey", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany("Surveys")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
                 });
 
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.TestQuestion", b =>
@@ -1047,7 +1288,15 @@ namespace StudentsManager.Mvc.Migrations
 
                     b.Navigation("Homeworks");
 
+                    b.Navigation("PersonalityTestChoices");
+
+                    b.Navigation("PersonalityTestResults");
+
+                    b.Navigation("PowerUpAnalyses");
+
                     b.Navigation("StudentExaminations");
+
+                    b.Navigation("Surveys");
 
                     b.Navigation("UserAnswers");
 

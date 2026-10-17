@@ -1,4 +1,6 @@
-﻿@model StudentsManager.Mvc.Domain.Views.Home.CourseExaminationSettingsView
+﻿@using Microsoft.AspNetCore.Identity
+@model StudentsManager.Mvc.Domain.Views.Home.CourseExaminationSettingsView
+@inject SignInManager<User> _signInManager
 @{
     ViewData["Title"] = "Начало";
 }
@@ -16,9 +18,22 @@
                         <p class="p-large">
                             на Хибридни Мобилни Приложения v11.0
                         </p>
+                        @if (ViewData["ShowSurvey"] is true)
+                        {
+                            <div class="curve-box">
+                                <a asp-controller="Survey" asp-action="Index" class="btn-big btn-gray">Survey</a>
+                            </div>
+                        }
+                        @if (_signInManager.IsSignedIn(User))
+                        {
+                            <div class="curve-box">
+                                <a asp-controller="PersonalityTest" asp-action="Index" class="btn-big btn-gray">Personality test</a>
+                            </div>
+                        }
                         <div class="curve-box">
                             <a asp-controller="Test" asp-action="Index" class="btn-big btn-gray">Тестове</a>
                         </div>
+
                         @if (Model.FirstAvailable)
                         {
                             <div class="curve-box">

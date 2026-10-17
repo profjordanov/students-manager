@@ -2,12 +2,23 @@ import { useState, useEffect } from "react";
 import { useAuth } from "../context/AuthContext";
 import { baseUrl } from "../services/apiConfig";
 
-export default function SlidoPage() {
-  const { isLoggedIn, userId } = useAuth();
+// Изпращаме GET заявка към /api/slido с параметри за максимален брой резултати
+async function fetchForumQuestions() {
+  const res = await fetch(`${baseUrl}/slido?limit=20&skip=0`);
+  if (!res.ok) throw new Error("Failed to fetch forum questions");
+  const data = await res.json(); // Преобразуваме отговора в JSON
 
-  // MOCKED FOR TESTING
-  //const isLoggedIn = true;
-  //const userId = "1eac9820-5e6e-4d10-6e94-08de36f40f78";
+  // Преобразуваме данните от API формат към вътрешния формат на компонента
+  return data.map((q) => ({
+    id: q.forumQuestionId, // ID на въпроса
+    description: q.forumQuestionDescription, // Текст на въпроса
+    // Коментарите идват като масив от стрингове — превръщаме ги в обекти с id и description
+    comments: (q.comments ?? []).map((text, i) => ({ id: i, description: text })),
+  }));
+}
+
+export default function SlidoPage() {
+  const { isLoggedIn } = useAuth();
 
   const [forumQuestions, setForumQuestions] = useState([]);
   const [loadingComments, setLoadingComments] = useState(true);
@@ -17,24 +28,10 @@ export default function SlidoPage() {
   const [commentErrors, setCommentErrors] = useState({}); // Mapping questionId -> error message
 
   useEffect(() => {
-    // Изпращаме GET заявка към /api/slido с параметри за максимален брой резултати
-    fetch(`${baseUrl}/slido?limit=20&skip=0`)
-      .then((res) => res.json()) // Преобразуваме отговора в JSON
-      .then((data) => {
-        // Преобразуваме данните от API формат към вътрешния формат на компонента
-        const mapped = data.map((q) => ({
-          id: q.forumQuestionId, // ID на въпроса
-          description: q.forumQuestionDescription, // Текст на въпроса
-          // Коментарите идват като масив от стрингове — превръщаме ги в обекти с id и description
-          comments: (q.comments ?? []).map((text, i) => ({ id: i, description: text })),
-        }));
-        setForumQuestions(mapped); // Записваме въпросите в state-а
-        setLoadingComments(false); // Скончваме loading state
-      })
-      .catch((err) => {
-        console.error("Failed to fetch forum questions", err);
-        setLoadingComments(false);
-      });
+    fetchForumQuestions()
+      .then(setForumQuestions) // Записваме въпросите в state-а
+      .catch((err) => console.error("Failed to fetch forum questions", err))
+      .finally(() => setLoadingComments(false)); // Скончваме loading state
   }, []); // Празен масив — изпълнява се само веднъж при зареждане
 
   const handleQuestionSubmit = (e) => {
@@ -50,17 +47,10 @@ export default function SlidoPage() {
       .then((res) => {
         if (!res.ok) throw new Error("Failed to post question");
         // След успешен POST, правим нов GET за да заредим актуалния списък с реални ID-та
-        return fetch(`${baseUrl}/slido?limit=20&skip=0`);
+        return fetchForumQuestions();
       })
-      .then((res) => res.json()) // Преобразуваме отговора в JSON
-      .then((data) => {
-        // Същото мапване като в useEffect
-        const mapped = data.map((q) => ({
-          id: q.forumQuestionId,
-          description: q.forumQuestionDescription,
-          comments: (q.comments ?? []).map((text, i) => ({ id: i, description: text })),
-        }));
-        setForumQuestions(mapped); // Обновяваме списъка с реални данни
+      .then((questions) => {
+        setForumQuestions(questions); // Обновяваме списъка с реални данни
         setNewQuestion(""); // Изчистваме полето
       })
       .catch((err) => console.error(err));
@@ -69,11 +59,11 @@ export default function SlidoPage() {
   const handleCommentSubmit = (questionId) => {
     const commentText = newComments[questionId];
     if (!commentText || !commentText.trim()) {
-      setCommentErrors({ ...commentErrors, [questionId]: "Please enter a comment" });
+      setCommentErrors((prev) => ({ ...prev, [questionId]: "Please enter a comment" }));
       return;
     }
     // Clear error if comment is valid
-    setCommentErrors({ ...commentErrors, [questionId]: "" });
+    setCommentErrors((prev) => ({ ...prev, [questionId]: "" }));
 
     fetch(`${baseUrl}/slido/comment`, {
       method: "POST",
@@ -82,23 +72,23 @@ export default function SlidoPage() {
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to post comment");
-        setForumQuestions(
-          forumQuestions.map((q) =>
+        setForumQuestions((prev) =>
+          prev.map((q) =>
             q.id === questionId
-              ? { ...q, comments: [...q.comments, { id: Math.random(), description: commentText }] }
+              ? { ...q, comments: [...q.comments, { id: q.comments.length, description: commentText }] }
               : q,
           ),
         );
-        setNewComments({ ...newComments, [questionId]: "" });
+        setNewComments((prev) => ({ ...prev, [questionId]: "" }));
       })
       .catch((err) => console.error(err));
   };
 
   const handleCommentChange = (questionId, text) => {
-    setNewComments({ ...newComments, [questionId]: text });
+    setNewComments((prev) => ({ ...prev, [questionId]: text }));
     // Clear error when user starts typing
     if (commentErrors[questionId]) {
-      setCommentErrors({ ...commentErrors, [questionId]: "" });
+      setCommentErrors((prev) => ({ ...prev, [questionId]: "" }));
     }
   };
 

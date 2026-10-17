@@ -8,6 +8,8 @@ RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
 
 # Copy source and build
 COPY . .
+# Optional API override, e.g. --build-arg VITE_API_BASE_URL=https://host/api
+ARG VITE_API_BASE_URL
 RUN npm run build
 
 # ---------- Runtime stage (Nginx) ----------

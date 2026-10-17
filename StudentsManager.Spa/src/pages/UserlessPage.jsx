@@ -9,7 +9,7 @@ function UserlessPage() {
     useEffect(() => {
         login('022a6007-f33c-47c3-b811-08de88b121f2');
         navigate('/slido', { replace: true });
-    }, []);
+    }, [login, navigate]);
 
     return null;
 }

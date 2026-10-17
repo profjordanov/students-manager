@@ -1,0 +1,27 @@
+@model StudentsManager.Mvc.Domain.Views.Surveys.SurveyResultView
+@using StudentsManager.Mvc.Services.Surveys
+
+<article class="survey-result">
+    <img class="survey-result-picture" src="@Model.PicturePath" alt="Picture uploaded by @Model.FullName" loading="lazy" />
+    <div class="survey-result-content">
+        <h2 class="survey-result-name"><span class="red">@Model.FullName</span></h2>
+        <time class="survey-result-date" datetime="@Model.CreatedAtUtc.ToString("O")">@Model.CreatedAtUtc.ToString("dd MMM yyyy") UTC</time>
+
+        <div class="survey-response">
+            <h3 class="soge-question">@SurveyConstants.PreviousExperienceQuestion</h3>
+            <p class="survey-answer">@Model.PreviousExperience</p>
+        </div>
+        <div class="survey-response">
+            <h3 class="soge-question">@SurveyConstants.CourseExpectationsQuestion</h3>
+            <p class="survey-answer">@Model.CourseExpectations</p>
+        </div>
+        <div class="survey-response">
+            <h3 class="soge-question">@SurveyConstants.HobbyQuestion</h3>
+            <p class="survey-answer">@Model.Hobby</p>
+        </div>
+        <div class="survey-response">
+            <h3 class="soge-question">@SurveyConstants.DreamProjectQuestion</h3>
+            <p class="survey-answer">@Model.DreamProject</p>
+        </div>
+    </div>
+</article>
