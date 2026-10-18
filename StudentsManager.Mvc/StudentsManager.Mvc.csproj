@@ -59,6 +59,7 @@
     <PackageReference Include="Microsoft.Build" Version="18.6.3" />
     <PackageReference Include="NuGet.Packaging" Version="7.6.0" />
     <PackageReference Include="NuGet.Protocol" Version="6.12.5" />
+    <PackageReference Include="System.Security.Cryptography.Pkcs" Version="10.0.13" />
     <Content Update="wwwroot\css\forum.css">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
