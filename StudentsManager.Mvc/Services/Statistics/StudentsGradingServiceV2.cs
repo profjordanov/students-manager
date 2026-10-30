@@ -26,6 +26,14 @@ namespace StudentsManager.Mvc.Services.Statistics
                 .Include(user => user.Courseworks)
                 .ToListAsync();
 
+            var examinedUserIds = (await _dbContext.RoboExaminationAttempts
+                    .AsNoTracking()
+                    .Where(attempt => attempt.SubmittedAtUtc != null)
+                    .Select(attempt => attempt.UserId)
+                    .Distinct()
+                    .ToListAsync())
+                .ToHashSet();
+
             var userTopicResults = await _dbContext
                 .UserTopicResults
                 .AsNoTracking()
@@ -43,7 +51,7 @@ namespace StudentsManager.Mvc.Services.Statistics
                 .ToListAsync();
 
             return students
-                .Select(user => ToView(user, userTopicResults, homeworks, studentCourseExaminations))
+                .Select(user => ToView(user, userTopicResults, homeworks, studentCourseExaminations, examinedUserIds))
                 .ToList();
         }
 
@@ -51,7 +59,8 @@ namespace StudentsManager.Mvc.Services.Statistics
             User student,
             IReadOnlyCollection<UserTopicResult> userTopicResults,
             IReadOnlyCollection<Homework> homeworks,
-            IReadOnlyCollection<StudentCourseExamination> studentCourseExaminations)
+            IReadOnlyCollection<StudentCourseExamination> studentCourseExaminations,
+            IReadOnlySet<Guid> examinedUserIds)
         {
             var hasCoursework = student.Courseworks != null && student.Courseworks.Any(coursework => coursework.Points > 0);
             var courseworkScore = hasCoursework ? (float)student.Courseworks!.First(coursework => coursework.Points > 0).Points : 0;
@@ -93,7 +102,8 @@ namespace StudentsManager.Mvc.Services.Statistics
                 SecondExaminationScore =
                     SetSafeScore(StudentExaminationScoreByType(studentCourseExaminations, student.Id, SecondType)),
 
-                HasExaminationAnswer = student.ExaminationAnswers != null && student.ExaminationAnswers.Count != 0,
+                HasExaminationAnswer = (student.ExaminationAnswers != null && student.ExaminationAnswers.Count != 0)
+                    || examinedUserIds.Contains(student.Id),
 
                 HasCoursework = hasCoursework,
                 CourseworkScore = courseworkScore

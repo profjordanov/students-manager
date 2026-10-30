@@ -34,12 +34,6 @@ function ChatbotPage() {
                     },
                 }
             );
-
-            gsap.fromTo(
-                '.soge-young-chatbot',
-                { autoAlpha: 0, y: 40 },
-                { autoAlpha: 1, y: 0, duration: 0.9, delay: 0.5, ease: 'power2.out' }
-            );
         }, containerRef);
 
         return () => ctx.revert();
@@ -48,9 +42,9 @@ function ChatbotPage() {
     return (
         <div className="chatbot-page" ref={containerRef}>
             <header className="soge-page-header">
-                <h1 className="soge-page-title">Chat with #Robo</h1>
+                <h1 className="soge-page-title">RoboExamination</h1>
                 <p className="soge-page-subtitle">
-                    Answer a few quick questions and get personalised guidance
+                    Решете изпита и изпратете отговорите си за оценяване
                 </p>
             </header>
 

@@ -1,5 +1,7 @@
 import { useState, useRef, useEffect, useCallback } from 'react';
 
+const MAX_ANSWER_LENGTH = 2000;
+
 function ChatbotTextInput({ onSubmit }) {
     const [value, setValue] = useState('');
     const [shaking, setShaking] = useState(false);
@@ -20,8 +22,9 @@ function ChatbotTextInput({ onSubmit }) {
         onSubmit(trimmed);
     }, [value, onSubmit]);
 
+    // Enter inserts a new line; Ctrl/Cmd+Enter submits.
     const handleKeyDown = useCallback((e) => {
-        if (e.key === 'Enter') {
+        if (e.key === 'Enter' && (e.ctrlKey || e.metaKey) && !e.nativeEvent.isComposing) {
             e.preventDefault();
             handleSubmit();
         }
@@ -29,20 +32,24 @@ function ChatbotTextInput({ onSubmit }) {
 
     return (
         <div className={`soge-input-wrapper ${shaking ? 'soge-shake' : ''}`}>
-            <div className="soge-input">
-                <input
-                    type="text"
-                    id="soge-input"
-                    className={value.trim() ? '' : 'empty'}
-                    value={value}
-                    onChange={(e) => setValue(e.target.value)}
-                    onKeyDown={handleKeyDown}
-                    autoFocus
-                />
-                <label htmlFor="soge-input">Type your answer here</label>
-                <div className="soge-input-line"></div>
+            <label htmlFor="soge-answer-input" className="soge-input-label">Type your answer here</label>
+            <textarea
+                id="soge-answer-input"
+                className="soge-textarea"
+                rows={6}
+                value={value}
+                maxLength={MAX_ANSWER_LENGTH}
+                onChange={(e) => setValue(e.target.value)}
+                onKeyDown={handleKeyDown}
+                aria-describedby="soge-answer-hint"
+                autoFocus
+            />
+            <div className="soge-input-footer">
+                <span id="soge-answer-hint" className="soge-input-hint">
+                    Ctrl+Enter to submit · {value.length}/{MAX_ANSWER_LENGTH}
+                </span>
+                <button type="button" className="soge-btn soge-btn--primary" onClick={handleSubmit}>Submit</button>
             </div>
-            <button type="button" className="soge-btn soge-btn--primary" onClick={handleSubmit}>Submit</button>
         </div>
     );
 }

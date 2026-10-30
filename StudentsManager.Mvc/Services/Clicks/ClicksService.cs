@@ -35,19 +35,9 @@ namespace StudentsManager.Mvc.Services.Clicks
             return questionsResourceStream.ReadAndDeserializeFromJson();
         }
 
-        public async Task SaveAndPublishAnswersAsync(ClickResultsRootObject rootObject, Guid userId,
-            string questionsContentType)
+        public async Task SaveAndPublishAnswersAsync(ClickResultsRootObject rootObject, Guid userId, string questionsContentType)
         {
-            var result = await SaveAnswersAsync(rootObject, userId, questionsContentType);
-            try
-            {
-                await _serviceBusSender.SendAsync(result.Id.ToString());
-            }
-            catch (Exception e)
-            {
-                Console.WriteLine(e);
-                throw;
-            }
+            await SaveAnswersAsync(rootObject, userId, questionsContentType);
         }
 
         public async Task<ExaminationAnswer> SaveAnswersAsync(ClickResultsRootObject rootObject, Guid userId, string questionsContentType)

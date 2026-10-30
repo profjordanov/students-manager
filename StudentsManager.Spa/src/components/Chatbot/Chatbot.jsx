@@ -1,155 +1,137 @@
-import { useState, useCallback, useRef, useEffect } from 'react';
+import { useCallback } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
-import questionsData from '../../data/questions.json';
-import { getErrorMessage } from '../../services/apiConfig';
-import { submitChatbotAnswers } from '../../services/chatbotService';
-import { logEvent } from '../../services/eventsService';
+import gsap from 'gsap';
+import { useRoboExamination } from './useRoboExamination';
 import ChatbotQuestion from './ChatbotQuestion';
 import ChatbotOptions from './ChatbotOptions';
 import ChatbotTextInput from './ChatbotTextInput';
 import ChatbotForm from './ChatbotForm';
 
-const questions = questionsData.questions;
-
 function Chatbot() {
-    const [currentIndex, setCurrentIndex] = useState(0);
-    const [answers, setAnswers] = useState([]);
-    const [isTyping, setIsTyping] = useState(true);
-    const [isComplete, setIsComplete] = useState(false);
-    const [isDismissed, setIsDismissed] = useState(false);
-    const [isSubmitting, setIsSubmitting] = useState(false);
-    const [submissionError, setSubmissionError] = useState('');
-    const [showResultsLink, setShowResultsLink] = useState(false);
-    const transitionTimer = useRef(null);
-    const { userId } = useAuth();
-
-    useEffect(() => {
-        return () => {
-            if (transitionTimer.current) clearTimeout(transitionTimer.current);
-        };
+    // The card only mounts after the examination loads, so animate it in on attach.
+    const cardRef = useCallback((node) => {
+        if (!node) return undefined;
+        gsap.fromTo(node, { autoAlpha: 0, y: 40 }, { autoAlpha: 1, y: 0, duration: 0.9, ease: 'power2.out' });
+        return () => gsap.killTweensOf(node);
     }, []);
 
-    const handleTypingComplete = useCallback(() => {
-        setIsTyping(false);
-    }, []);
+    const {
+        status,
+        examination,
+        currentStep,
+        currentIndex,
+        isTyping,
+        isDismissed,
+        submitStatus,
+        submitError,
+        submissionResult,
+        handleTypingComplete,
+        answer,
+        dismiss,
+        submit,
+        retrySubmit,
+        retryLoad,
+    } = useRoboExamination();
 
-    const handleAnswer = useCallback((answerText) => {
-        const current = questions[currentIndex];
-        setAnswers((prev) => [
-            ...prev,
-            { questionId: current.id, questionText: current.text, answer: answerText }
-        ]);
-
-        // Early exit: if first question answered with "No", dismiss
-        if (current.id === 'q1' && answerText === 'No') {
-            setIsTyping(true);
-            transitionTimer.current = setTimeout(() => {
-                setIsDismissed(true);
-            }, 1000);
-            return;
-        }
-
-        setIsTyping(true);
-        transitionTimer.current = setTimeout(() => {
-            setCurrentIndex((prev) => prev + 1);
-        }, 1000);
-    }, [currentIndex]);
-
-    const handleConfirm = useCallback(async () => {
-        setIsSubmitting(true);
-        setSubmissionError('');
-
-        try {
-            const submittedAnswers = answers.slice(1);
-            const result = await submitChatbotAnswers({
-                userId,
-                answers: submittedAnswers,
-            });
-
-            // Fire-and-forget: a logging failure must not fail the submission.
-            logEvent(userId, 'chatbot', {
-                answers: submittedAnswers,
-                response: result,
-            });
-
-            setIsComplete(true);
-        } catch (err) {
-            setSubmissionError(getErrorMessage(err, 'Submission failed.'));
-        } finally {
-            setIsSubmitting(false);
-        }
-    }, [answers, userId]);
-
-    const handleCancel = useCallback(() => {
-        setIsDismissed(true);
-    }, []);
-
-    const handleShowResultsLink = useCallback(() => setShowResultsLink(true), []);
-
-    const statusMessage = isDismissed
-        ? 'No worries! Come back anytime.'
-        : isComplete
-            ? 'Your answers have been submitted successfully. Thank you!'
-            : null;
-
-    if (statusMessage) {
+    if (status === 'loading') {
+        return <div className="quiz-status" role="status">Зареждане на изпита...</div>;
+    }
+    if (status === 'disabled') {
+        return <div className="quiz-status" role="status">Няма активен изпит.</div>;
+    }
+    if (status === 'quizRequired') {
         return (
-            <div className="soge-young-chatbot">
-                <div className="soge-status">
-                    <div className="soge-question">
-                        <ChatbotQuestion
-                            text={statusMessage}
-                            onTypingComplete={isComplete ? handleShowResultsLink : undefined}
-                        />
-                    </div>
-                    {isComplete && (
-                        <div
-                            className="soge-status-link"
-                            style={{ opacity: showResultsLink ? 1 : 0 }}
-                        >
-                            <Link to="/chatbot/results" className="soge-btn">
-                                View Results
-                            </Link>
-                        </div>
-                    )}
-                </div>
+            <div className="quiz-status" role="status">
+                <p>Първо решете RoboQuiz.</p>
+                <Link className="soge-btn" to="/quiz">Към RoboQuiz</Link>
+            </div>
+        );
+    }
+    if (status === 'none') {
+        return <div className="quiz-status" role="status">Няма налични изпити.</div>;
+    }
+    if (status === 'submitted') {
+        return (
+            <div className="quiz-status" role="status">
+                <p>Вече сте предали изпита.</p>
+                <Link className="soge-btn" to="/robo-examination/results">Виж резултата</Link>
+            </div>
+        );
+    }
+    if (status === 'error') {
+        return (
+            <div className="quiz-status" role="alert">
+                <p>{submitError}</p>
+                <button type="button" className="soge-btn soge-btn--primary" onClick={retryLoad}>
+                    Опитай отново
+                </button>
             </div>
         );
     }
 
-    const currentQuestion = questions[currentIndex];
-    if (!currentQuestion) return null;
+    if (isDismissed) {
+        return <div className="quiz-status" role="status">Можете да се върнете към изпита по-късно.</div>;
+    }
+
+    if (submitStatus === 'saved' || submitStatus === 'duplicate') {
+        return (
+            <div className="quiz-status" role="status">
+                <p>
+                    {submissionResult?.evaluationStatus === 'Failed'
+                        ? 'Оценяването не бе успешно. Отговорите са запазени.'
+                        : submitStatus === 'duplicate'
+                            ? 'Отговорите вече са записани.'
+                            : 'Отговорите са записани.'}
+                </p>
+                <Link className="soge-btn" to="/robo-examination/results">Виж резултата</Link>
+            </div>
+        );
+    }
+
+    if (!currentStep) return null;
+
+    const isQuestionStep = currentStep.type !== 'intro' && currentStep.type !== 'finish';
 
     return (
-        <div className="soge-young-chatbot">
+        <div className="soge-young-chatbot" ref={cardRef}>
+            <p className="soge-result-meta">
+                Вариант {examination.variant} ({examination.type}). Неизпратените отговори не се запазват при презареждане.
+            </p>
             <div className="soge-question">
                 <ChatbotQuestion
-                    key={currentIndex}
-                    text={currentQuestion.text}
+                    key={`${examination.attemptId}-${currentIndex}`}
+                    text={currentStep.text}
                     onTypingComplete={handleTypingComplete}
                 />
             </div>
-            <div
-                className="soge-answer"
-                style={{ opacity: isTyping ? 0 : 1 }}
-            >
-                {!isTyping && currentQuestion.type === 'options' && (
-                    <ChatbotOptions
-                        options={currentQuestion.options}
-                        onSelect={handleAnswer}
+            <div className="soge-answer" style={{ opacity: isTyping ? 0 : 1 }}>
+                {!isTyping && currentStep.type === 'intro' && (
+                    <ChatbotOptions options={currentStep.options} onSelect={answer} />
+                )}
+                {!isTyping && isQuestionStep && (
+                    <ChatbotTextInput
+                        key={`${examination.attemptId}-${currentStep.id}`}
+                        onSubmit={answer}
                     />
                 )}
-                {!isTyping && currentQuestion.type === 'text' && (
-                    <ChatbotTextInput onSubmit={handleAnswer} />
-                )}
-                {!isTyping && currentQuestion.type === 'finish' && (
+                {!isTyping && currentStep.type === 'finish' && (
                     <ChatbotForm
-                        onConfirm={handleConfirm}
-                        onCancel={handleCancel}
-                        isSubmitting={isSubmitting}
-                        error={submissionError}
+                        onConfirm={submit}
+                        onCancel={dismiss}
+                        isSubmitting={submitStatus === 'submitting'}
+                        error={submitStatus === 'failed' ? submitError : ''}
+                        showCancel={submitStatus !== 'failed'}
                     />
+                )}
+                {submitStatus === 'failed' && currentStep.type === 'finish' && (
+                    <button
+                        type="button"
+                        className="soge-btn"
+                        onClick={retrySubmit}
+                        disabled={submitStatus === 'submitting'}
+                    >
+                        Опитай отново
+                    </button>
                 )}
             </div>
         </div>

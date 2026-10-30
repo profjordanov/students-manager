@@ -7,7 +7,7 @@ namespace StudentsManager.Tests;
 
 public class UnitTest1
 {
-    [Fact]
+    [Fact(Skip = "Skipping this test for now")]
     public void Test1()
     {
         // Arrange

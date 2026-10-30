@@ -18,7 +18,7 @@ async function fetchForumQuestions() {
 }
 
 export default function SlidoPage() {
-  const { isLoggedIn } = useAuth();
+  const { isLoggedIn, userId } = useAuth();
 
   const [forumQuestions, setForumQuestions] = useState([]);
   const [loadingComments, setLoadingComments] = useState(true);
@@ -42,7 +42,7 @@ export default function SlidoPage() {
     fetch(`${baseUrl}/slido/question`, {
       method: "POST",
       headers: { "Content-Type": "application/json" }, // Указваме че изпращаме JSON
-      body: JSON.stringify({ question: newQuestion }), // Тялото на заявката
+      body: JSON.stringify({ question: newQuestion, userId }), // Тялото на заявката
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to post question");
@@ -68,7 +68,7 @@ export default function SlidoPage() {
     fetch(`${baseUrl}/slido/comment`, {
       method: "POST",
       headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({ forumQuestionId: questionId, description: commentText }),
+      body: JSON.stringify({ forumQuestionId: questionId, description: commentText, userId }),
     })
       .then((res) => {
         if (!res.ok) throw new Error("Failed to post comment");

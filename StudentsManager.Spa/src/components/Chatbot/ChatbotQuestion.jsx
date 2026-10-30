@@ -6,7 +6,11 @@ function ChatbotQuestion({ text, onTypingComplete }) {
 
     useEffect(() => {
         const typed = new Typed(el.current, {
-            strings: [text],
+            strings: [text.replace(/[&<>]/g, (character) => ({
+                '&': '&amp;',
+                '<': '&lt;',
+                '>': '&gt;',
+            })[character])],
             typeSpeed: 20,
             showCursor: false,
             onComplete: () => {

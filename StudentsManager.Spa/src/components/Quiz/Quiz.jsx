@@ -1,4 +1,5 @@
-import { quizQuestions } from '../../data/quizQuestions';
+import { useEffect } from 'react';
+import { Link, useNavigate } from 'react-router-dom';
 import { useQuiz } from './useQuiz';
 import QuizProgress from './QuizProgress';
 import QuizQuestion from './QuizQuestion';
@@ -7,7 +8,11 @@ import QuizReview from './QuizReview';
 import QuizStart from './QuizStart';
 
 function Quiz() {
+    const navigate = useNavigate();
     const {
+        status,
+        loadError,
+        quiz,
         quizStarted,
         shuffledQuestions,
         currentQuestionIndex,
@@ -19,6 +24,8 @@ function Quiz() {
         reviewMode,
         scoreDetails,
         feedbackState,
+        submitStatus,
+        submitError,
         history,
         historyLoading,
         historyError,
@@ -26,14 +33,58 @@ function Quiz() {
         handleStart,
         handleAnswerClick,
         handleShowResults,
-        handleShowReview,
-        handleRestart,
-    } = useQuiz(quizQuestions);
+        retrySubmit,
+        retryLoad,
+    } = useQuiz();
+
+    // The report is taller than the results card, so keep each screen starting at the top.
+    useEffect(() => {
+        if (reviewMode || quizCompleted) window.scrollTo({ top: 0 });
+    }, [reviewMode, quizCompleted]);
+
+    if (status === 'loading') {
+        return <div className="quiz-status" role="status">Зареждане на теста...</div>;
+    }
+
+    if (status === 'disabled') {
+        return <div className="quiz-status" role="status">Няма активен изпит.</div>;
+    }
+
+    if (status === 'none') {
+        return <div className="quiz-status" role="status">Няма налични тестове.</div>;
+    }
+
+    if (status === 'exhausted') {
+        return (
+            <div className="quiz-status" role="status">
+                <p>Вече сте предали RoboQuiz за този изпит.</p>
+                <button type="button" className="soge-btn" onClick={() => navigate('/robo-examination')}>
+                    Continue to RoboExamination
+                </button>
+                <Link className="soge-btn" to="/robo-examination/results">
+                    View examination results
+                </Link>
+            </div>
+        );
+    }
+
+    if (status === 'error') {
+        return (
+            <div className="quiz-status" role="alert">
+                <p>{loadError}</p>
+                <button type="button" className="soge-btn soge-btn--primary" onClick={retryLoad}>
+                    Опитай отново
+                </button>
+            </div>
+        );
+    }
 
     if (!quizStarted) {
         return (
             <QuizStart
                 totalQuestions={shuffledQuestions.length}
+                type={quiz.type}
+                variant={quiz.variant}
                 onStart={handleStart}
                 history={history}
                 historyLoading={historyLoading}
@@ -42,24 +93,23 @@ function Quiz() {
         );
     }
 
+    if (reviewMode) {
+        return <QuizReview answers={answers} onShowResults={handleShowResults} />;
+    }
+
     if (quizCompleted) {
         return (
             <QuizResults
                 scoreDetails={scoreDetails}
                 totalQuestions={shuffledQuestions.length}
                 answers={answers}
-                onReview={handleShowReview}
-                onRestart={handleRestart}
-            />
-        );
-    }
-
-    if (reviewMode) {
-        return (
-            <QuizReview
-                answers={answers}
-                onShowResults={handleShowResults}
-                onRestart={handleRestart}
+                submitStatus={submitStatus}
+                submitError={submitError}
+                onRetrySubmit={retrySubmit}
+                onContinue={() => navigate('/robo-examination')}
+                canContinue={submitStatus === 'saved' || submitStatus === 'duplicate'}
+                quizType={quiz.type}
+                quizVariant={quiz.variant}
             />
         );
     }

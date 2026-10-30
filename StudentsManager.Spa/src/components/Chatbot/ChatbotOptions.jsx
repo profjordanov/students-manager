@@ -3,9 +3,9 @@ function ChatbotOptions({ options, onSelect }) {
 
     return (
         <div className={`soge-btn-wrapper ${countClass}`}>
-            {options.map((opt, i) => (
-                <button key={i} type="button" className="soge-btn" onClick={() => onSelect(opt.text)}>
-                    {opt.text}
+            {options.map((text) => (
+                <button key={text} type="button" className="soge-btn" onClick={() => onSelect(text)}>
+                    {text}
                 </button>
             ))}
         </div>

@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Microsoft.EntityFrameworkCore;
+﻿using Microsoft.EntityFrameworkCore;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Domain.Views.Home;
 using StudentsManager.Mvc.Persistence;
@@ -20,6 +19,15 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
             return new CourseExaminationSettingsView(await CanAccessTheFirstAsync(), await CanAccessTheSecondAsync());
         }
 
+        public Task<CourseExaminationSetting?> GetFirstEnabledAsync()
+        {
+            return _dbContext.CourseExaminationSettings
+                .AsNoTracking()
+                .Where(setting => setting.Enabled)
+                .OrderBy(setting => setting.Id)
+                .FirstOrDefaultAsync();
+        }
+
         public async Task<bool> CanAccessTheFirstAsync()
         {
             var entity = await FirstByTypeAsync(CourseExaminationConstants.FirstType);
@@ -32,49 +40,43 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
             return entity is { Enabled: true };
         }
 
-        public async Task MakeFirstAvailableAsync()
+        public Task MakeFirstAvailableAsync()
         {
-            var entity = await FirstByTypeAsync(CourseExaminationConstants.FirstType);
-            Debug.Assert(entity != null, nameof(entity) + " != null");
-            entity.Enabled = true;
-            await UpdateAsync(entity);
+            return SetEnabledAsync(CourseExaminationConstants.FirstType, true);
         }
 
-        public async Task MakeSecondAvailableAsync()
+        public Task MakeSecondAvailableAsync()
         {
-            var entity = await FirstByTypeAsync(CourseExaminationConstants.SecondType);
-            Debug.Assert(entity != null, nameof(entity) + " != null");
-            entity.Enabled = true;
-            await UpdateAsync(entity);
+            return SetEnabledAsync(CourseExaminationConstants.SecondType, true);
         }
 
-        public async Task MakeFirstUnavailableAsync()
+        public Task MakeFirstUnavailableAsync()
         {
-            var entity = await FirstByTypeAsync(CourseExaminationConstants.FirstType);
-            Debug.Assert(entity != null, nameof(entity) + " != null");
-            entity.Enabled = false;
-            await UpdateAsync(entity);
+            return SetEnabledAsync(CourseExaminationConstants.FirstType, false);
         }
 
-        public async Task MakeSecondUnavailableAsync()
+        public Task MakeSecondUnavailableAsync()
         {
-            var entity = await FirstByTypeAsync(CourseExaminationConstants.SecondType);
-            if (entity == null) throw new ArgumentNullException(nameof(entity));
-            entity.Enabled = false;
-            await UpdateAsync(entity);
+            return SetEnabledAsync(CourseExaminationConstants.SecondType, false);
+        }
+
+        private async Task SetEnabledAsync(string type, bool enabled)
+        {
+            var entity = await FirstByTypeAsync(type)
+                ?? throw new InvalidOperationException($"Examination setting '{type}' is not configured.");
+
+            await _dbContext.CourseExaminationSettings
+                .Where(setting => enabled || setting.Id == entity.Id)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(setting => setting.Enabled, setting => enabled && setting.Id == entity.Id));
         }
 
         private Task<CourseExaminationSetting?> FirstByTypeAsync(string type)
         {
             return _dbContext
                 .CourseExaminationSettings
+                .AsNoTracking()
                 .FirstOrDefaultAsync(setting => setting.Type == type);
-        }
-
-        private async Task UpdateAsync(CourseExaminationSetting entity)
-        {
-            _dbContext.CourseExaminationSettings.Update(entity);
-            await _dbContext.SaveChangesAsync();
         }
     }
 }

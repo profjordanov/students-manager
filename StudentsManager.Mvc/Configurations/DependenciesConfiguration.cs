@@ -17,6 +17,8 @@ using StudentsManager.Mvc.Services.Messaging;
 using StudentsManager.Mvc.Services.Options;
 using StudentsManager.Mvc.Services.PersonalityTests;
 using StudentsManager.Mvc.Services.PowerUpAnalyses;
+using StudentsManager.Mvc.Services.RoboQuizzes;
+using StudentsManager.Mvc.Services.RoboExaminations;
 using StudentsManager.Mvc.Services.Statistics;
 using StudentsManager.Mvc.Services.Storage;
 using StudentsManager.Mvc.Services.Students;
@@ -33,6 +35,7 @@ namespace StudentsManager.Mvc.Configurations
         {
             services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
             services.Configure<ServiceBusSettings>(configuration.GetSection(nameof(ServiceBusSettings)));
+            services.Configure<RoboExaminationSettings>(configuration.GetSection(nameof(RoboExaminationSettings)));
             services.Configure<StorageSettings>(configuration.GetSection(nameof(StorageSettings)));
             services.Configure<AgentFrameworkAppSettings>(configuration.GetSection(nameof(AgentFrameworkAppSettings)));
 
@@ -134,6 +137,9 @@ namespace StudentsManager.Mvc.Configurations
             services.AddScoped<IPersonalityTestsService, PersonalityTestsService>();
 
             services.AddScoped<IPowerUpAnalysesService, PowerUpAnalysesService>();
+            services.AddScoped<IRoboQuizService, RoboQuizService>();
+            services.AddScoped<IRoboExaminationService, RoboExaminationService>();
+            services.AddScoped<IRoboExaminationEvaluator, AzureOpenAiRoboExaminationEvaluator>();
 
             services.AddScoped<IExaminationAnswersService, ExaminationAnswersService>();
 

@@ -30,21 +30,9 @@ namespace StudentsManager.Mvc.Controllers
             }
 
             var returnUrl = TempData["returnUrl"]?.ToString();
-            return string.IsNullOrEmpty(returnUrl) || IsSurveyReturnUrl(returnUrl)
+            return string.IsNullOrEmpty(returnUrl)
                 ? RedirectToHome()
                 : RedirectToReturnUrl(returnUrl);
-        }
-
-        private static bool IsSurveyReturnUrl(string returnUrl)
-        {
-            if (!Uri.TryCreate(new Uri("https://localhost"), returnUrl, out var uri))
-            {
-                return false;
-            }
-
-            var path = Uri.UnescapeDataString(uri.AbsolutePath);
-            return path.Equals("/Survey", StringComparison.OrdinalIgnoreCase)
-                || path.StartsWith("/Survey/", StringComparison.OrdinalIgnoreCase);
         }
 
         [HttpGet]

@@ -1,66 +1,66 @@
-function ChatbotResultCard({ result, form, createdOn, wasSuccessfullyProcessed, errorMessage, isLatest }) {
-    const formattedDate = createdOn
-        ? new Date(createdOn).toLocaleString()
-        : 'Unknown date';
-
+function ChatbotResultCard({
+    type,
+    variant,
+    submittedAtUtc,
+    evaluationStatus,
+    grade,
+    feedback,
+    answers,
+    isLatest,
+}) {
+    const formattedDate = submittedAtUtc
+        ? new Date(submittedAtUtc).toLocaleString()
+        : 'Неизвестна дата';
     const cardClass = `soge-result-card${isLatest ? ' soge-result-card--latest' : ''}`;
+    const statusText = evaluationStatus === 'Pending'
+        ? 'Оценява се…'
+        : evaluationStatus === 'Failed'
+            ? 'Оценяването не бе успешно. Отговорите са запазени.'
+            : null;
 
     const content = (
         <>
             <div className="soge-result-meta">
                 <span className="soge-result-meta-date">{formattedDate}</span>
-                {!wasSuccessfullyProcessed && (
-                    <span className="soge-result-processing">
-                        {errorMessage
-                            ? <span className="soge-error" role="alert">{errorMessage}</span>
-                            : 'Your answers are being processed…'}
-                    </span>
-                )}
+                <span>{type} · {variant}</span>
             </div>
 
-            {wasSuccessfullyProcessed && (
+            {statusText && (
+                <p className={evaluationStatus === 'Failed' ? 'soge-error' : 'soge-result-processing'}
+                    role={evaluationStatus === 'Failed' ? 'alert' : 'status'}>
+                    {statusText}
+                </p>
+            )}
+            {evaluationStatus === 'Succeeded' && (
                 <>
-                    {form ? (
-                        <>
-                            <div className="soge-result-grade">
-                                Grade: <strong>{form.grade}</strong>
-                            </div>
-                            {form.overallFeedback && (
-                                <div className="soge-result-feedback">
-                                    <p>{form.overallFeedback}</p>
-                                </div>
-                            )}
-                        </>
-                    ) : (
-                        <p className="soge-result-fallback">Could not load details.</p>
-                    )}
-
-                    {Array.isArray(result) ? (
-                        <ul className="soge-result-qa ul-reset">
-                            {result.map((item, i) => (
-                                <li key={i} className="soge-result-qa-item">
-                                    <span className="soge-result-qa-q">{item.QuestionText}</span>
-                                    <span className="soge-result-qa-a">{item.Answer}</span>
-                                </li>
-                            ))}
-                        </ul>
-                    ) : (
-                        <p className="soge-result-fallback">Could not load Q&amp;A details.</p>
+                    <div className="soge-result-grade">
+                        Оценка: <strong>{grade ?? '—'}</strong>
+                    </div>
+                    {feedback && (
+                        <div className="soge-result-feedback">
+                            <p>{feedback}</p>
+                        </div>
                     )}
                 </>
             )}
+            <ul className="soge-result-qa ul-reset">
+                {answers.map((item) => (
+                    <li key={item.questionId} className="soge-result-qa-item">
+                        <span className="soge-result-qa-q">{item.questionText}</span>
+                        <span className="soge-result-qa-a">{item.answer}</span>
+                    </li>
+                ))}
+            </ul>
         </>
     );
 
-    if (isLatest) {
-        return <div className={cardClass}>{content}</div>;
-    }
+    if (isLatest) return <div className={cardClass}>{content}</div>;
 
     return (
         <details className={cardClass}>
             <summary className="soge-result-history-toggle">
-                {formattedDate}
-                {wasSuccessfullyProcessed && form ? ` — Grade: ${form.grade}` : ' — Processing…'}
+                {formattedDate} — {type} · {variant}
+                {evaluationStatus === 'Succeeded' ? ` · Оценка: ${grade}` : ` · ${statusText}`}
             </summary>
             <div className="soge-result-history-body">{content}</div>
         </details>

@@ -1,9 +1,11 @@
-﻿using StudentsManager.Mvc.Domain.Entities;
+using Microsoft.EntityFrameworkCore;
+using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Persistence;
 using StudentsManager.Mvc.Services.AppSettings;
 using StudentsManager.Mvc.Services.CourseExaminations;
 using StudentsManager.Mvc.Services.Courses;
 using StudentsManager.Mvc.Services.Options;
+using StudentsManager.Mvc.Services.RoboExaminations;
 using StudentsManager.Mvc.Services.Questions;
 using StudentsManager.Mvc.Services.Topics;
 
@@ -20,6 +22,8 @@ namespace StudentsManager.Mvc.Services.Tests
 
         public void SeedDatabase()
         {
+            RoboExaminationSeeder.UpgradeLegacyQuestions(_dbContext);
+
             var hasAnyCourses = _dbContext.Courses.Any();
             if (!hasAnyCourses)
             {
@@ -38,8 +42,7 @@ namespace StudentsManager.Mvc.Services.Tests
                 }
             }
 
-            var hasAnyTopics = _dbContext.Topics.Any();
-            if (hasAnyTopics) return;
+            if (_dbContext.Topics.Any()) return;
 
             _dbContext.Topics.AddRange(TopicsSeeder.Topics);
             _dbContext.SaveChanges();
@@ -71,8 +74,6 @@ namespace StudentsManager.Mvc.Services.Tests
             _dbContext.TestQuestions.AddRange(ReactTopicSeeder.TestQuestions);
             _dbContext.SaveChanges();
 
-            // <->
-
             _dbContext.QuestionOptions.AddRange(QuestionOptionSeeder.QuestionOptions);
             _dbContext.SaveChanges();
 
@@ -90,6 +91,25 @@ namespace StudentsManager.Mvc.Services.Tests
 
             _dbContext.QuestionOptions.AddRange(ReactTopicSeeder.QuestionOptions);
             _dbContext.SaveChanges();
+        }
+
+        private void SeedRoboExaminations()
+        {
+            RoboExaminationSeeder.UpgradeLegacyQuestions(_dbContext);
+
+            if (_dbContext.RoboExaminations.Any(item => item.Type == "First" && item.Variant == "A"))
+                return;
+
+            var examination = RoboExaminationSeeder.FirstVariantA;
+            _dbContext.RoboExaminations.Add(examination);
+            try
+            {
+                _dbContext.SaveChanges();
+            }
+            catch (DbUpdateException exception) when (exception.IsUniqueConstraintViolation())
+            {
+                _dbContext.Entry(examination).State = EntityState.Detached;
+            }
         }
     }
 }
