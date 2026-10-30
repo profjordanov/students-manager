@@ -1,148 +1,191 @@
-import { useState, useEffect, useRef, useCallback } from 'react';
+import { useState, useEffect, useLayoutEffect, useRef, useCallback } from 'react';
 import gsap from 'gsap';
 import { useAuth } from '../../context/AuthContext';
-import { createEvent, getUserEvents } from '../../services/eventsService';
+import { getErrorMessage } from '../../services/apiConfig';
+import {
+    getEnabledExamination,
+    getNextQuiz,
+    getQuizResults,
+    submitQuizResult,
+} from '../../services/roboQuizService';
 import {
     FEEDBACK_DELAY,
     SLIDE_DURATION,
     SLIDE_OFFSET,
-    QUIZ_QUESTION_COUNT,
     calculateQuizResult,
     shuffleArray,
 } from './quizConstants';
 
-const QUIZ_EVENT_TYPES = {
-    start: 'quiz-start',
-    answer: 'quiz-answer',
-    result: 'quiz-result',
-};
-
-function createAttemptId() {
-    if (window.crypto?.randomUUID) {
-        return window.crypto.randomUUID();
-    }
-
-    return `${Date.now()}-${Math.random().toString(36).slice(2)}`;
-}
-
-function getGuestQuizUserId() {
-    const storageKey = 'quizGuestUserId';
-    const existingId = localStorage.getItem(storageKey);
-    if (existingId) return existingId;
-
-    const nextId = `quiz-guest-${createAttemptId()}`;
-    localStorage.setItem(storageKey, nextId);
-    return nextId;
-}
-
-function parseEventData(event) {
-    if (!event?.data) return {};
-    if (typeof event.data !== 'string') return event.data;
-
-    try {
-        return JSON.parse(event.data);
-    } catch {
-        return {};
-    }
-}
-
-function getEventDate(event, data) {
-    return event?.datetimeUtc || event?.datetimeUTC || event?.createdAt || data?.finishedAt || data?.startedAt;
-}
-
-function createQuestionSet(questions) {
-    return shuffleArray(questions).slice(0, Math.min(QUIZ_QUESTION_COUNT, questions.length));
-}
-
-export function useQuiz(questions) {
+export function useQuiz() {
     const { userId } = useAuth();
-    const [guestUserId] = useState(getGuestQuizUserId);
-    const participantId = userId || guestUserId;
-    const [attemptId, setAttemptId] = useState(createAttemptId);
+    const [status, setStatus] = useState('loading');
+    const [loadError, setLoadError] = useState('');
+    const [quiz, setQuiz] = useState(null);
+    const [shuffledQuestions, setShuffledQuestions] = useState([]);
     const [quizStarted, setQuizStarted] = useState(false);
-    const [shuffledQuestions, setShuffledQuestions] = useState(() => createQuestionSet(questions));
     const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
     const [answers, setAnswers] = useState([]);
     const [isAnimating, setIsAnimating] = useState(false);
     const [quizCompleted, setQuizCompleted] = useState(false);
     const [reviewMode, setReviewMode] = useState(false);
-    const [scoreDetails, setScoreDetails] = useState(() => calculateQuizResult([], shuffledQuestions.length));
+    const [scoreDetails, setScoreDetails] = useState(() => calculateQuizResult([], 0));
     const [feedbackState, setFeedbackState] = useState(null);
+    const [submitStatus, setSubmitStatus] = useState('idle');
+    const [submitError, setSubmitError] = useState('');
     const [history, setHistory] = useState([]);
     const [historyLoading, setHistoryLoading] = useState(false);
     const [historyError, setHistoryError] = useState('');
 
     const questionCardRef = useRef(null);
     const feedbackTimerRef = useRef(null);
-
-    const logQuizEvent = useCallback(async (type, data = {}) => {
-        if (!participantId) return;
-
-        try {
-            await createEvent({
-                userId: participantId,
-                type,
-                data: {
-                    attemptId,
-                    source: 'StudentsManager.Spa',
-                    ...data,
-                },
-            });
-        } catch (err) {
-            console.error('Quiz event logging failed:', err);
-        }
-    }, [attemptId, participantId]);
+    const requestIdRef = useRef(0);
+    const historyRequestIdRef = useRef(0);
+    const mountedRef = useRef(false);
+    const currentUserIdRef = useRef(userId);
+    const currentQuizIdRef = useRef(quiz?.id ?? null);
+    useLayoutEffect(() => {
+        currentUserIdRef.current = userId;
+        currentQuizIdRef.current = quiz?.id ?? null;
+    }, [quiz?.id, userId]);
 
     const loadHistory = useCallback(async () => {
-        if (!participantId) return;
+        if (!userId) return;
 
+        const requestId = ++historyRequestIdRef.current;
+        const requestedUserId = userId;
         setHistoryLoading(true);
         setHistoryError('');
-
         try {
-            const events = await getUserEvents(participantId);
-            const quizResults = events
-                .filter((event) => event.type === QUIZ_EVENT_TYPES.result || event.type === 'quiz')
-                .map((event) => {
-                    const data = parseEventData(event);
-                    return {
-                        id: event.id || `${data.attemptId}-${getEventDate(event, data)}`,
-                        date: getEventDate(event, data),
-                        correctCount: data.correctCount ?? data.correct ?? 0,
-                        totalQuestions: data.totalQuestions ?? 0,
-                        percentage: data.percentage ?? data.score ?? 0,
-                        points: data.points ?? 0,
-                        passed: Boolean(data.passed),
-                    };
-                })
-                .sort((a, b) => new Date(b.date || 0) - new Date(a.date || 0))
-                .slice(0, 5);
-
-            setHistory(quizResults);
-        } catch (err) {
-            console.error('Quiz history loading failed:', err);
+            const results = await getQuizResults(requestedUserId);
+            if (!mountedRef.current
+                || requestId !== historyRequestIdRef.current
+                || currentUserIdRef.current !== requestedUserId) return;
+            setHistory(results.map((result) => ({
+                id: result.id,
+                date: result.completedAtUtc,
+                percentage: result.scorePercentage,
+                type: result.type,
+                variant: result.variant,
+            })));
+        } catch (error) {
+            if (!mountedRef.current
+                || requestId !== historyRequestIdRef.current
+                || currentUserIdRef.current !== requestedUserId) return;
+            console.error('Quiz history loading failed:', error);
             setHistoryError('Историята не може да бъде заредена в момента.');
         } finally {
-            setHistoryLoading(false);
+            if (requestId === historyRequestIdRef.current
+                && currentUserIdRef.current === requestedUserId) setHistoryLoading(false);
         }
-    }, [participantId]);
+    }, [userId]);
+
+    const loadNextQuiz = useCallback(async () => {
+        const requestId = ++requestIdRef.current;
+        const requestedUserId = userId;
+        setStatus('loading');
+        setLoadError('');
+        setQuizStarted(false);
+
+        try {
+            if (!requestedUserId) {
+                setStatus('error');
+                setLoadError('Необходимо е да влезете в профила си.');
+                return;
+            }
+
+            const examinationResult = await getEnabledExamination();
+            if (requestId !== requestIdRef.current || currentUserIdRef.current !== requestedUserId) return;
+            if (examinationResult.status === 'disabled') {
+                setQuiz(null);
+                setStatus('disabled');
+                return;
+            }
+
+            const quizResult = await getNextQuiz(requestedUserId);
+            if (requestId !== requestIdRef.current || currentUserIdRef.current !== requestedUserId) return;
+
+            if (quizResult.status !== 'ready') {
+                setQuiz(null);
+                setStatus(quizResult.status);
+                return;
+            }
+
+            setQuiz(quizResult.quiz);
+            setShuffledQuestions(shuffleArray(quizResult.quiz.questions));
+            setCurrentQuestionIndex(0);
+            setAnswers([]);
+            setIsAnimating(false);
+            setQuizCompleted(false);
+            setReviewMode(false);
+            setScoreDetails(calculateQuizResult([], quizResult.quiz.questions.length));
+            setFeedbackState(null);
+            setSubmitStatus('idle');
+            setSubmitError('');
+            setStatus('ready');
+        } catch (error) {
+            if (requestId !== requestIdRef.current || currentUserIdRef.current !== requestedUserId) return;
+            console.error('Quiz loading failed:', error);
+            setQuiz(null);
+            setLoadError(getErrorMessage(error, 'Тестът не може да бъде зареден в момента.'));
+            setStatus('error');
+        }
+    }, [userId]);
+
+    const persistResult = useCallback(async (scorePercentage) => {
+        if (!userId || !quiz) return;
+
+        const requestId = requestIdRef.current;
+        const submittedUserId = userId;
+        const submittedQuizId = quiz.id;
+        const isCurrentSubmission = () => mountedRef.current
+            && requestId === requestIdRef.current
+            && currentUserIdRef.current === submittedUserId
+            && currentQuizIdRef.current === submittedQuizId;
+
+        setSubmitStatus('submitting');
+        setSubmitError('');
+        try {
+            const result = await submitQuizResult({
+                userId: submittedUserId,
+                roboQuizId: submittedQuizId,
+                scorePercentage,
+            });
+            if (!isCurrentSubmission()) return;
+            setSubmitStatus(result.status);
+            void loadHistory();
+        } catch (error) {
+            if (!isCurrentSubmission()) return;
+            console.error('Quiz result save failed:', error);
+            setSubmitError(getErrorMessage(error, 'Резултатът не може да бъде записан.'));
+            setSubmitStatus('failed');
+        }
+    }, [loadHistory, quiz, userId]);
 
     useEffect(() => {
-        loadHistory();
-    }, [loadHistory]);
+        let active = true;
+        mountedRef.current = true;
+        const questionCard = questionCardRef.current;
 
-    useEffect(() => {
-        const card = questionCardRef.current;
+        Promise.resolve().then(() => {
+            if (!active) return;
+            void loadNextQuiz();
+            void loadHistory();
+        });
+
         return () => {
+            active = false;
+            mountedRef.current = false;
+            requestIdRef.current += 1;
+            historyRequestIdRef.current += 1;
             if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
-            if (card) gsap.killTweensOf(card);
+            if (questionCard) gsap.killTweensOf(questionCard);
         };
-    }, []);
+    }, [loadHistory, loadNextQuiz]);
 
     useEffect(() => {
-        if (!quizStarted || !questionCardRef.current) return;
+        if (!quizStarted || !questionCardRef.current) return undefined;
 
-        gsap.fromTo(
+        const tween = gsap.fromTo(
             questionCardRef.current,
             { x: SLIDE_OFFSET, autoAlpha: 0 },
             {
@@ -153,16 +196,13 @@ export function useQuiz(questions) {
                 onComplete: () => setIsAnimating(false),
             }
         );
+
+        return () => tween.kill();
     }, [currentQuestionIndex, quizStarted]);
 
     const handleStart = useCallback(() => {
         setQuizStarted(true);
-        logQuizEvent(QUIZ_EVENT_TYPES.start, {
-            startedAt: new Date().toISOString(),
-            questionIds: shuffledQuestions.map((question) => question.id),
-            totalQuestions: shuffledQuestions.length,
-        });
-    }, [logQuizEvent, shuffledQuestions]);
+    }, []);
 
     const handleAnswerClick = useCallback((optionId) => {
         if (isAnimating) return;
@@ -188,15 +228,6 @@ export function useQuiz(questions) {
         setAnswers(nextAnswers);
         setFeedbackState(isCorrect ? 'correct' : 'incorrect');
         setIsAnimating(true);
-        logQuizEvent(QUIZ_EVENT_TYPES.answer, {
-            questionId: currentQuestion.id,
-            selectedId: optionId,
-            selectedText: selectedOption?.text || '',
-            correctId: currentQuestion.correctAnswer,
-            isCorrect,
-            answeredAt: new Date().toISOString(),
-            questionNumber: currentQuestionIndex + 1,
-        });
 
         feedbackTimerRef.current = setTimeout(() => {
             if (!questionCardRef.current) return;
@@ -211,30 +242,19 @@ export function useQuiz(questions) {
                     if (nextIndex >= shuffledQuestions.length) {
                         const result = calculateQuizResult(nextAnswers, shuffledQuestions.length);
                         setScoreDetails(result);
+                        setQuizCompleted(false);
                         setReviewMode(true);
                         setIsAnimating(false);
-                        logQuizEvent(QUIZ_EVENT_TYPES.result, {
-                            ...result,
-                            totalQuestions: shuffledQuestions.length,
-                            answers: nextAnswers.map((answer) => ({
-                                questionId: answer.questionId,
-                                selectedId: answer.selectedId,
-                                correctId: answer.correctId,
-                                isCorrect: answer.isCorrect,
-                            })),
-                            finishedAt: new Date().toISOString(),
-                        }).then(loadHistory);
+                        persistResult(result.percentage);
                     } else {
-                        if (questionCardRef.current) {
-                            gsap.set(questionCardRef.current, { x: SLIDE_OFFSET, autoAlpha: 0 });
-                        }
+                        gsap.set(questionCardRef.current, { x: SLIDE_OFFSET, autoAlpha: 0 });
                         setFeedbackState(null);
                         setCurrentQuestionIndex(nextIndex);
                     }
                 },
             });
         }, FEEDBACK_DELAY);
-    }, [answers, currentQuestionIndex, isAnimating, loadHistory, logQuizEvent, shuffledQuestions]);
+    }, [answers, currentQuestionIndex, isAnimating, persistResult, shuffledQuestions]);
 
     const handleShowResults = useCallback(() => {
         setReviewMode(false);
@@ -249,19 +269,14 @@ export function useQuiz(questions) {
     const handleRestart = useCallback(() => {
         if (feedbackTimerRef.current) clearTimeout(feedbackTimerRef.current);
         if (questionCardRef.current) gsap.killTweensOf(questionCardRef.current);
-
-        const nextQuestions = createQuestionSet(questions);
-        setAttemptId(createAttemptId());
-        setShuffledQuestions(nextQuestions);
-        setCurrentQuestionIndex(0);
         setAnswers([]);
+        setCurrentQuestionIndex(0);
         setIsAnimating(false);
         setQuizCompleted(false);
         setReviewMode(false);
-        setQuizStarted(false);
-        setScoreDetails(calculateQuizResult([], nextQuestions.length));
         setFeedbackState(null);
-    }, [questions]);
+        void loadNextQuiz();
+    }, [loadNextQuiz]);
 
     const currentQuestion = shuffledQuestions[currentQuestionIndex];
     const selectedAnswer = answers.length > currentQuestionIndex
@@ -269,7 +284,10 @@ export function useQuiz(questions) {
         : null;
 
     return {
-        participantId,
+        userId,
+        status,
+        loadError,
+        quiz,
         quizStarted,
         shuffledQuestions,
         currentQuestionIndex,
@@ -281,6 +299,8 @@ export function useQuiz(questions) {
         reviewMode,
         scoreDetails,
         feedbackState,
+        submitStatus,
+        submitError,
         history,
         historyLoading,
         historyError,
@@ -290,5 +310,7 @@ export function useQuiz(questions) {
         handleShowResults,
         handleShowReview,
         handleRestart,
+        retrySubmit: () => persistResult(scoreDetails.percentage),
+        retryLoad: loadNextQuiz,
     };
 }

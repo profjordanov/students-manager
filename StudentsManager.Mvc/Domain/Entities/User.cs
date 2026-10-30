@@ -23,6 +23,8 @@ namespace StudentsManager.Mvc.Domain.Entities
         public ICollection<PersonalityTestChoice>? PersonalityTestChoices { get; set; }
         public ICollection<PersonalityTestResult>? PersonalityTestResults { get; set; }
         public ICollection<PowerUpAnalysis>? PowerUpAnalyses { get; set; }
+        public ICollection<RoboQuizUserResult>? RoboQuizResults { get; set; }
+        public ICollection<RoboExaminationAttempt>? RoboExaminationAttempts { get; set; }
 
         public DateTime CreatedOn { get; set; }
 

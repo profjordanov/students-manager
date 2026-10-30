@@ -1,17 +1,8 @@
 import { useEffect, useState } from "react";
 import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
 import { faMessage, faBook } from "@fortawesome/free-solid-svg-icons";
-import { getExaminationAnswers } from "../services/chatbotService";
+import { getRoboExaminationResults } from "../services/roboExaminationService";
 import { getStudents } from "../services/userService";
-
-function parseJson(value) {
-    if (typeof value !== "string") return value ?? null;
-    try {
-        return JSON.parse(value);
-    } catch {
-        return null;
-    }
-}
 
 export default function ComradesPage() {
 
@@ -34,22 +25,22 @@ export default function ComradesPage() {
         if (!userId) return;
 
         try {
-            const data = await getExaminationAnswers(userId);
+            const data = await getRoboExaminationResults(userId);
 
             if (!Array.isArray(data) || data.length === 0) {
-                setInfo({ grade: "N/A", feedback: "No data", answers: [] });
+                setInfo({ grade: "N/A", feedback: "No data", answers: [], evaluationStatus: "None" });
                 return;
             }
 
-            // The API returns attempts unordered.
-            const latest = data.reduce((a, b) => (new Date(b.createdOn) > new Date(a.createdOn) ? b : a));
-            const form = parseJson(latest.form) ?? {};
-            const answers = parseJson(latest.result);
+            const latest = data[0];
 
             setInfo({
-                grade: form.grade ?? "N/A",
-                feedback: form.overallFeedback ?? "N/A",
-                answers: Array.isArray(answers) ? answers : [],
+                grade: latest.grade ?? "N/A",
+                feedback: latest.feedback ?? "N/A",
+                answers: latest.answers ?? [],
+                evaluationStatus: latest.evaluationStatus,
+                type: latest.type,
+                variant: latest.variant,
             });
         } catch (err) {
             console.error("Failed to load examination answers", err);
@@ -139,7 +130,9 @@ export default function ComradesPage() {
                         <h3>Grade: {info.grade}</h3>
                         <p><strong>Feedback:</strong> {info.feedback}</p>
                         <hr />
-                        <h3>Chatbot Examination – Questions & Answers by <span className="span-name">@{selectedStudent?.userName}</span></h3>
+                        <h3>RoboExamination — {info.type} · {info.variant} by <span className="span-name">@{selectedStudent?.userName}</span></h3>
+                        {info.evaluationStatus === "Pending" && <p>Оценява се…</p>}
+                        {info.evaluationStatus === "Failed" && <p>Оценяването не бе успешно. Отговорите са запазени.</p>}
                         {info.answers.length > 0 ? (
                             <ol>
                                 {info.answers.map((a, index) => (
@@ -147,17 +140,12 @@ export default function ComradesPage() {
                                         <div>
                                             <strong>Q:</strong>{" "}
                                             <strong>
-                                                {a.QuestionText ||
-                                                a.questionText ||
-                                                a.Question ||
-                                                a.question ||
-                                                a.QuestionId ||
-                                                "Question not available"}
+                                                {a.questionText || "Question not available"}
                                             </strong>
                                         </div>
                                         <div>
                                             <strong>A:</strong>{" "}
-                                            {a.Answer || a.answer || "N/A"}
+                                            {a.answer || "N/A"}
                                         </div>
                                     </li>
                                 ))}

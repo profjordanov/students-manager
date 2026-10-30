@@ -163,6 +163,38 @@
 
 .red { color: #b16f5f }
 
+.result-profile-card {
+    border: 1px solid #e8e7e7;
+    border-top: 4px solid #b16f5f;
+    border-radius: 16px;
+    box-shadow: 0 12px 32px rgba(0, 0, 0, .06);
+}
+
+.result-profile-card .result-profile-message {
+    line-height: 1.4;
+    margin: 0;
+}
+
+.result-profile-link {
+    color: #8a5042;
+    display: inline-block;
+    text-decoration: underline;
+    text-decoration-thickness: 2px;
+    text-underline-offset: .15em;
+    transition: color .25s, background-color .25s;
+}
+
+.result-profile-link:hover, .result-profile-link:focus {
+    background-color: #f7eeeb;
+    color: #683b31;
+}
+
+.result-profile-link:focus {
+    border-radius: 3px;
+    outline: 2px solid #8a5042;
+    outline-offset: 4px;
+}
+
 .soge-face {
     -o-transition: .4s all;
     -webkit-transition: .4s all;

@@ -45,11 +45,20 @@
 }
 
 .hp-hero {
-    height: 100vh;
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
+    justify-content: center;
+    gap: 28px;
+}
+
+.hero-main {
+    width: 100%;
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding-right: 0;
+    gap: 24px;
 }
 
 .hero-content {
@@ -93,6 +102,98 @@
     font-weight: 300;
     max-width: 800px;
     letter-spacing: 2px;
+}
+
+.assessment-announcement {
+    position: relative;
+    z-index: 1;
+    margin: 0;
+    padding: 24px 30px;
+    border: 1px solid rgba(95, 177, 168, 0.55);
+    border-radius: 14px;
+    background: linear-gradient(110deg, rgba(18, 58, 54, 0.96), rgba(8, 24, 23, 0.96));
+    box-shadow: 0 0 28px rgba(95, 177, 168, 0.2);
+    font-family: var(--mono-font);
+}
+
+.assessment-announcement--active {
+    border: 2px solid var(--matrix-color);
+    border-left-width: 8px;
+    background: linear-gradient(110deg, rgba(24, 78, 72, 0.98), rgba(8, 28, 26, 0.98));
+    box-shadow: 0 0 38px rgba(95, 177, 168, 0.32);
+}
+
+.assessment-announcement__eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    margin: 0 0 10px;
+    color: #8de1d6;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 2px;
+    text-transform: uppercase;
+}
+
+.assessment-announcement__eyebrow::before {
+    width: 9px;
+    height: 9px;
+    border-radius: 50%;
+    background: #8de1d6;
+    box-shadow: 0 0 12px rgba(141, 225, 214, 0.9);
+    content: '';
+}
+
+.assessment-announcement h2 {
+    margin: 0 0 12px;
+    color: #fff;
+    font-family: var(--primary-font);
+    font-size: clamp(1.15rem, 2.2vw, 1.6rem);
+}
+
+.assessment-announcement p {
+    margin: 0 0 10px;
+    color: #c5d2d0;
+}
+
+.assessment-announcement__actions {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 18px;
+}
+
+.assessment-announcement__link,
+.assessment-announcement__button {
+    display: inline-block;
+    border: 1px solid var(--matrix-color);
+    border-radius: 6px;
+    padding: 10px 16px;
+    background: var(--matrix-color);
+    color: #000;
+    font: 700 0.9rem var(--primary-font);
+    text-decoration: none;
+    cursor: pointer;
+    transition: background-color 160ms ease, box-shadow 160ms ease, transform 160ms ease;
+}
+
+.assessment-announcement__link:hover,
+.assessment-announcement__button:hover {
+    background: #8de1d6;
+    box-shadow: 0 0 18px rgba(95, 177, 168, 0.55);
+    transform: translateY(-1px);
+}
+
+.assessment-announcement__secondary {
+    color: #a8d9d3;
+    text-underline-offset: 3px;
+}
+
+.assessment-announcement__link:focus-visible,
+.assessment-announcement__button:focus-visible,
+.assessment-announcement__secondary:focus-visible {
+    outline: 3px solid #fff;
+    outline-offset: 3px;
 }
 
 .robot-container {
@@ -736,10 +837,12 @@
 
 @media (max-width: 1024px) {
     .hp-hero {
-        flex-direction: row;
-        align-items: center;
-        height: auto;
+        min-height: 100vh;
         padding: 100px 6% 60px;
+        gap: 24px;
+    }
+
+    .hero-main {
         gap: 32px;
     }
 
@@ -763,6 +866,10 @@
         grid-template-columns: repeat(2, 1fr);
     }
 
+    .assessment-announcement {
+        padding: 24px 26px;
+    }
+
     .engine-grid {
         grid-template-columns: repeat(2, 1fr);
     }
@@ -783,15 +890,17 @@
 
 @media (max-width: 767px) {
     .hp-hero {
-        flex-direction: row;
-        align-items: center;
-        height: auto;
+        min-height: 0;
         padding: 80px 16px 40px;
+        gap: 20px;
+    }
+
+    .hero-main {
         gap: 16px;
     }
 
     .hero-content {
-        flex: 1 1 60%;
+        flex: 1 1 0;
         text-align: left;
         min-width: 0;
     }
@@ -810,7 +919,7 @@
     }
 
     .robot-container {
-        flex: 0 0 40%;
+        flex: 0 0 35%;
         justify-content: flex-end;
         align-self: flex-end;
         width: auto;
@@ -823,6 +932,10 @@
     .features-grid {
         grid-template-columns: 1fr;
         gap: 18px;
+    }
+
+    .assessment-announcement {
+        padding: 20px;
     }
 
     .feature-card {

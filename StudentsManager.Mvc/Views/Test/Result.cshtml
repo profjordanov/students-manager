@@ -16,40 +16,12 @@
                                  class="template-image">
                         </div>
                     </div>
-                    <div class="intro-test-txt-box white-box center anim-elem top delay-02">
-                        @if (Model == null)
-                        {
-                            <div class="addition-txt-box">
-                                <span class="p-huge lightGrey addition-txt">Няма резултати</span>
-                            </div>
-                        }
-                        else
-                        {
-                            <div class="addition-txt-box">
-                                <span class="p-huge lightGrey addition-txt">Резултат:</span>
-                            </div>
-                            <div class="wrap-txt">
-                                <h3 class="title-big black">
-                                    @Model.Topic.Description -
-                                    <strong class="red">@Model.Score</strong> точки.
-                                </h3>
-                                <p class="p-small">
-                                    @if (Model.Score == 0)
-                                    {
-                                        <span>Нищо, другият път по-добре!</span>
-                                    }
-                                    else
-                                    {
-                                        <span>Машина!</span>
-                                    }
-                                </p>
-                                <div class="curve-box">
-                                    <a asp-controller="Home" asp-action="Index" class="btn-big btn-gray">
-                                        Текущ контрол
-                                    </a>
-                                </div>
-                            </div>
-                        }
+                    <div class="intro-test-txt-box white-box center anim-elem top delay-02 result-profile-card">
+                        <div class="wrap-txt">
+                            <h3 class="title-big black result-profile-message">
+                                Резултатите може да видиш <a class="result-profile-link" href="https://students-manager-spa-ehfpf6a6ekaddwgw.westeurope-01.azurewebsites.net/profile">тук</a>
+                            </h3>
+                        </div>
                     </div>
                 </div>
             </div>

@@ -1,4 +1,4 @@
-function ChatbotForm({ onConfirm, onCancel, isSubmitting, error }) {
+function ChatbotForm({ onConfirm, onCancel, isSubmitting, error, showCancel = true }) {
     return (
         <>
             <div className="soge-btn-wrapper btn-2">
@@ -10,14 +10,16 @@ function ChatbotForm({ onConfirm, onCancel, isSubmitting, error }) {
                 >
                     {isSubmitting ? 'Submitting…' : 'Submit answers'}
                 </button>
-                <button
-                    type="button"
-                    className="soge-btn"
-                    onClick={onCancel}
-                    disabled={isSubmitting}
-                >
-                    No thanks
-                </button>
+                {showCancel && (
+                    <button
+                        type="button"
+                        className="soge-btn"
+                        onClick={onCancel}
+                        disabled={isSubmitting}
+                    >
+                        No thanks
+                    </button>
+                )}
             </div>
             {error && (
                 <p role="alert" className="soge-error">{error}</p>

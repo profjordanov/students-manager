@@ -17,7 +17,7 @@ namespace StudentsManager.Mvc.Migrations
         {
 #pragma warning disable 612, 618
             modelBuilder
-                .HasAnnotation("ProductVersion", "10.0.8")
+                .HasAnnotation("ProductVersion", "10.0.14")
                 .HasAnnotation("Relational:MaxIdentifierLength", 128);
 
             SqlServerModelBuilderExtensions.UseIdentityColumns(modelBuilder);
@@ -533,6 +533,193 @@ namespace StudentsManager.Mvc.Migrations
                     b.ToTable("QuestionOptions");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboExamination", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("StringifiedJsonContent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Variant")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type", "Variant")
+                        .IsUnique();
+
+                    b.ToTable("RoboExaminations");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboExaminationAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("AnswersJson")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvaluationError")
+                        .HasMaxLength(2000)
+                        .HasColumnType("nvarchar(2000)");
+
+                    b.Property<DateTime?>("EvaluationStartedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("EvaluationStatus")
+                        .IsRequired()
+                        .HasMaxLength(20)
+                        .HasColumnType("nvarchar(20)");
+
+                    b.Property<string>("ExaminationType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Feedback")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int?>("Grade")
+                        .HasColumnType("int");
+
+                    b.Property<string>("RawEvaluation")
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<int>("RoboExaminationId")
+                        .HasColumnType("int");
+
+                    b.Property<DateTime?>("SubmittedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoboExaminationId");
+
+                    b.HasIndex("UserId", "ExaminationType")
+                        .IsUnique();
+
+                    b.ToTable("RoboExaminationAttempts", t =>
+                        {
+                            t.HasCheckConstraint("CK_RoboExaminationAttempts_Grade", "[Grade] IS NULL OR [Grade] BETWEEN 2 AND 6");
+                        });
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboQuiz", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("StringifiedJsonContent")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.Property<string>("Type")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<string>("Variant")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("Type", "Variant")
+                        .IsUnique();
+
+                    b.ToTable("RoboQuizzes");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboQuizAttempt", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("AssignedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<string>("ExaminationType")
+                        .IsRequired()
+                        .HasMaxLength(100)
+                        .HasColumnType("nvarchar(100)");
+
+                    b.Property<int>("RoboQuizId")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoboQuizId");
+
+                    b.HasIndex("UserId", "ExaminationType")
+                        .IsUnique();
+
+                    b.ToTable("RoboQuizAttempts");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboQuizUserResult", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<DateTime>("CompletedAtUtc")
+                        .HasColumnType("datetime2");
+
+                    b.Property<int>("RoboQuizId")
+                        .HasColumnType("int");
+
+                    b.Property<int>("ScorePercentage")
+                        .HasColumnType("int");
+
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.HasKey("Id");
+
+                    b.HasIndex("RoboQuizId");
+
+                    b.HasIndex("UserId", "RoboQuizId")
+                        .IsUnique();
+
+                    b.ToTable("RoboQuizUserResults", t =>
+                        {
+                            t.HasCheckConstraint("CK_RoboQuizUserResults_ScorePercentage", "[ScorePercentage] BETWEEN 0 AND 100");
+                        });
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.Role", b =>
                 {
                     b.Property<Guid>("Id")
@@ -925,6 +1112,28 @@ namespace StudentsManager.Mvc.Migrations
                     b.ToTable("UserCourseworks");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserScore", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<decimal>("FirstExaminationScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("Points")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.Property<decimal>("SecondExaminationScore")
+                        .HasPrecision(18, 2)
+                        .HasColumnType("decimal(18,2)");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UsersScore", (string)null);
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserTopicResult", b =>
                 {
                     b.Property<int>("Id")
@@ -1106,6 +1315,63 @@ namespace StudentsManager.Mvc.Migrations
                     b.Navigation("TestQuestion");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboExaminationAttempt", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.RoboExamination", "Examination")
+                        .WithMany("Attempts")
+                        .HasForeignKey("RoboExaminationId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany("RoboExaminationAttempts")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Examination");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboQuizAttempt", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.RoboQuiz", "Quiz")
+                        .WithMany()
+                        .HasForeignKey("RoboQuizId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany()
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Quiz");
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboQuizUserResult", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.RoboQuiz", "RoboQuiz")
+                        .WithMany("Results")
+                        .HasForeignKey("RoboQuizId")
+                        .OnDelete(DeleteBehavior.Restrict)
+                        .IsRequired();
+
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithMany("RoboQuizResults")
+                        .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("RoboQuiz");
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.StudentCourseExamination", b =>
                 {
                     b.HasOne("StudentsManager.Mvc.Domain.Entities.CourseExamination", "CourseExamination")
@@ -1216,6 +1482,17 @@ namespace StudentsManager.Mvc.Migrations
                     b.Navigation("User");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserScore", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("StudentsManager.Mvc.Domain.Entities.UserScore", "UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserTopicResult", b =>
                 {
                     b.HasOne("StudentsManager.Mvc.Domain.Entities.Topic", "Topic")
@@ -1257,6 +1534,16 @@ namespace StudentsManager.Mvc.Migrations
                     b.Navigation("UserAnswers");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboExamination", b =>
+                {
+                    b.Navigation("Attempts");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.RoboQuiz", b =>
+                {
+                    b.Navigation("Results");
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.StudentCourseExamination", b =>
                 {
                     b.Navigation("Uploads");
@@ -1293,6 +1580,10 @@ namespace StudentsManager.Mvc.Migrations
                     b.Navigation("PersonalityTestResults");
 
                     b.Navigation("PowerUpAnalyses");
+
+                    b.Navigation("RoboExaminationAttempts");
+
+                    b.Navigation("RoboQuizResults");
 
                     b.Navigation("StudentExaminations");
 

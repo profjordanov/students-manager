@@ -55,6 +55,18 @@ namespace StudentsManager.Mvc.Persistence
 
         public DbSet<Event> Events { get; set; }
 
+        public DbSet<RoboQuiz> RoboQuizzes { get; set; }
+
+        public DbSet<RoboQuizUserResult> RoboQuizUserResults { get; set; }
+
+        public DbSet<RoboQuizAttempt> RoboQuizAttempts { get; set; }
+
+        public DbSet<RoboExamination> RoboExaminations { get; set; }
+
+        public DbSet<RoboExaminationAttempt> RoboExaminationAttempts { get; set; }
+
+        public DbSet<UserScore> UsersScore { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.ConfigureQuestionOptionRelations();
@@ -72,6 +84,9 @@ namespace StudentsManager.Mvc.Persistence
             builder.ConfigurePersonalityTestChoices();
             builder.ConfigurePersonalityTestResults();
             builder.ConfigurePowerUpAnalyses();
+            builder.ConfigureRoboQuizzes();
+            builder.ConfigureRoboExaminations();
+            builder.ConfigureUsersScore();
 
             builder.ConfigureCourses();
             builder.ConfigureCourseExamination();

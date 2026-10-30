@@ -1,4 +1,4 @@
-import { QUIZ_HALF_POINT_CORRECT_COUNT, QUIZ_PASS_CORRECT_COUNT } from './quizConstants';
+import { QUIZ_HALF_POINT_PERCENTAGE, QUIZ_PASS_PERCENTAGE } from './quizConstants';
 
 function formatHistoryDate(date) {
     if (!date) return 'последен опит';
@@ -12,7 +12,7 @@ function formatHistoryDate(date) {
     }).format(new Date(date));
 }
 
-function QuizStart({ totalQuestions, onStart, history, historyLoading, historyError }) {
+function QuizStart({ totalQuestions, type, variant, onStart, history, historyLoading, historyError }) {
     return (
         <section className="quiz-start section-init-test">
             <div className="bg-image quiz-start__bg" aria-hidden="true" />
@@ -22,13 +22,13 @@ function QuizStart({ totalQuestions, onStart, history, historyLoading, historyEr
                         Готов ли си за <strong>теста?</strong>
                     </h1>
                     <p className="p-mid white regular quiz-start__copy">
-                        Тестът включва {totalQuestions} произволни въпроса.
-                        За 1 точка са необходими {QUIZ_PASS_CORRECT_COUNT} верни отговора,
-                        а {QUIZ_HALF_POINT_CORRECT_COUNT} верни отговора дават 0.5 точки.
+                        Вариант {variant} ({type}) включва {totalQuestions} въпроса.
+                        За 5 точки са необходими {QUIZ_PASS_PERCENTAGE}% верни отговори,
+                        а резултат от поне {QUIZ_HALF_POINT_PERCENTAGE}% дава 2.5 точки.
                     </p>
                     <div className="quiz-start__stats" aria-label="Правила за оценяване">
-                        <span><strong>{QUIZ_PASS_CORRECT_COUNT}</strong> верни = 1 точка</span>
-                        <span><strong>{QUIZ_HALF_POINT_CORRECT_COUNT}</strong> верни = 0.5 точки</span>
+                        <span><strong>{QUIZ_PASS_PERCENTAGE}%</strong> =  5 точки</span>
+                        <span><strong>{QUIZ_HALF_POINT_PERCENTAGE}%</strong> = 2.5 точки</span>
                         <span><strong>{totalQuestions}</strong> въпроса</span>
                     </div>
                     <div className="btn-box quiz-start__actions">
@@ -50,10 +50,8 @@ function QuizStart({ totalQuestions, onStart, history, historyLoading, historyEr
                                 {history.map((attempt) => (
                                     <li key={attempt.id} className="quiz-history__item">
                                         <span>{formatHistoryDate(attempt.date)}</span>
-                                        <strong>{attempt.points} точки</strong>
-                                        <small>
-                                            {attempt.correctCount} / {attempt.totalQuestions} верни
-                                        </small>
+                                        <strong>{attempt.percentage}%</strong>
+                                        <small>{attempt.type} · вариант {attempt.variant}</small>
                                     </li>
                                 ))}
                             </ul>

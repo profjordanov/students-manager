@@ -1,4 +1,4 @@
-function QuizReview({ answers, onShowResults, onRestart }) {
+function QuizReview({ answers, onShowResults }) {
     return (
         <div className="quiz-review">
             <h2 className="quiz-review__title">Преглед на отговорите</h2>
@@ -22,10 +22,10 @@ function QuizReview({ answers, onShowResults, onRestart }) {
                                     <li key={opt.id} className={`quiz-review__option ${modifier}`}>
                                         {opt.text}
                                         {isSelected && !isCorrect && (
-                                            <span className="quiz-review__badge quiz-review__badge--wrong" aria-label="Грешен отговор"> ✗</span>
+                                            <span className="quiz-review__badge quiz-review__badge--wrong" role="img" aria-label="Грешен отговор"> ✗</span>
                                         )}
                                         {isCorrect && (
-                                            <span className="quiz-review__badge quiz-review__badge--right" aria-label="Верен отговор"> ✓</span>
+                                            <span className="quiz-review__badge quiz-review__badge--right" role="img" aria-label="Верен отговор"> ✓</span>
                                         )}
                                     </li>
                                 );
@@ -35,13 +35,6 @@ function QuizReview({ answers, onShowResults, onRestart }) {
                 ))}
             </ol>
             <div className="quiz-review__footer">
-                <button
-                    type="button"
-                    className="soge-btn"
-                    onClick={onRestart}
-                >
-                    Нов опит
-                </button>
                 <button
                     type="button"
                     className="soge-btn soge-btn--primary"

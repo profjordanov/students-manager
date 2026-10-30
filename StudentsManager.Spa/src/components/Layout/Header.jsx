@@ -161,13 +161,13 @@ function Header() {
                             aria-label="Main navigation"
                         >
                             <ul className="menu menu-left">
-                                <li className="menu-item" ref={assignMenuItemRef(0)}>
-                                    <Link to="/slido" className="menu-link" onClick={closeMobileMenu}>
-                                        Slido
-                                    </Link>
-                                </li>
                                 {isLoggedIn && (
                                     <>
+                                        <li className="menu-item" ref={assignMenuItemRef(0)}>
+                                            <Link to="/slido" className="menu-link" onClick={closeMobileMenu}>
+                                                Slido
+                                            </Link>
+                                        </li>
                                         <li className="menu-item" ref={assignMenuItemRef(1)}>
                                             <Link to="/comrades" className="menu-link" onClick={closeMobileMenu}>
                                                 Comrades
@@ -189,21 +189,13 @@ function Header() {
                             </h1>
 
                             <ul className="menu menu-right">
-                                <li className="menu-item" ref={assignMenuItemRef(3)}>
-                                    <Link to="/quiz" className="menu-link" onClick={closeMobileMenu}>
-                                        Quiz
+                                <li className="menu-item" ref={assignMenuItemRef(5)}>
+                                    <Link to="/users-score" className="menu-link" onClick={closeMobileMenu}>
+                                        Score
                                     </Link>
                                 </li>
                                 {isLoggedIn && (
-                                    <li className="menu-item" ref={assignMenuItemRef(4)}>
-                                        <Link to="/chatbot" className="menu-link" onClick={closeMobileMenu}>
-                                            Chatbot
-                                        </Link>
-                                    </li>
-                                )}
-
-                                {isLoggedIn && (
-                                    <li className="menu-item" ref={assignMenuItemRef(5)}>
+                                    <li className="menu-item" ref={assignMenuItemRef(3)}>
                                         <Link to="/timeline" className="menu-link" onClick={closeMobileMenu}>
                                             Timeline
                                         </Link>
@@ -212,7 +204,7 @@ function Header() {
                             </ul>
                         </nav>
 
-                        <div className="login-container" ref={assignMenuItemRef(6)}>
+                        <div className="login-container" ref={assignMenuItemRef(4)}>
                             <div className="login-container-inner">
                                 <div className="login-btn-wrap">
                                     {isLoggedIn ? (

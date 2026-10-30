@@ -13,7 +13,7 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
         public static readonly CourseExaminationSetting SecondSetting = new()
         {
             Type = CourseExaminationConstants.SecondType,
-            Enabled = true
+            Enabled = false
         };
 
         public static readonly List<CourseExaminationSetting> Settings = new()

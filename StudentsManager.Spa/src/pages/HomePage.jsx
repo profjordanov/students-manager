@@ -1,4 +1,5 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useLayoutEffect, useRef, useState } from 'react';
+import { Link } from 'react-router-dom';
 import Typed from 'typed.js';
 import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
 import {
@@ -9,6 +10,9 @@ import {
 } from '@fortawesome/free-solid-svg-icons';
 import robotImage from '../assets/home/robot.png';
 import { useAuth } from '../context/AuthContext';
+import { getErrorMessage } from '../services/apiConfig';
+import { getEnabledExamination } from '../services/roboQuizService';
+import { getExaminationResults } from '../services/examinationResultsService';
 import { getProfile } from '../services/userService';
 import './HomePage.css';
 
@@ -125,13 +129,119 @@ function HomePage() {
     const canvasRef = useRef(null);
     const subtitleRef = useRef(null);
     const containerRef = useRef(null);
+    const availabilityRequestId = useRef(0);
+    const historyRequestId = useRef(0);
+    const currentUserId = useRef(userId);
+    const currentActiveType = useRef(null);
 
     const [timeLeft, setTimeLeft] = useState('');
     const [stats, setStats] = useState(null); // null = loading
+    const [availability, setAvailability] = useState({ status: 'loading', examination: null, error: '' });
+    const [examinationHistory, setExaminationHistory] = useState({ status: 'idle', userId: null, type: null });
+    const [availabilityRetry, setAvailabilityRetry] = useState(0);
+    const [historyRetry, setHistoryRetry] = useState(0);
     const [easterEgg, setEasterEgg] = useState(false);
     // useRef avoids re-renders on every keypress while still tracking sequence position
     const konamiIdxRef = useRef(0);
     const easterEggTimerRef = useRef(null);
+    const activeType = availability.examination?.type ?? null;
+
+    useLayoutEffect(() => {
+        currentUserId.current = userId;
+    }, [userId]);
+
+    useLayoutEffect(() => {
+        currentActiveType.current = activeType;
+    }, [activeType]);
+
+    useEffect(() => {
+        let active = true;
+
+        const loadAvailability = async (background = false) => {
+            const requestId = ++availabilityRequestId.current;
+            // Keep navigation mounted when a click first gives focus back to the window.
+            setAvailability((previous) => background && previous.status === 'ready'
+                ? previous
+                : { ...previous, status: 'loading', error: '' });
+            try {
+                const result = await getEnabledExamination();
+                if (!active || requestId !== availabilityRequestId.current) return;
+                setAvailability(result.status === 'disabled'
+                    ? { status: 'disabled', examination: null, error: '' }
+                    : { status: 'ready', examination: result.examination, error: '' });
+            } catch (error) {
+                if (!active || requestId !== availabilityRequestId.current) return;
+                console.error('Active examination loading failed:', error);
+                setAvailability({
+                    status: 'error',
+                    examination: null,
+                    error: getErrorMessage(error, 'The active assessment is unavailable right now.'),
+                });
+            }
+        };
+
+        const handleFocus = () => {
+            void loadAvailability(true);
+            setHistoryRetry((value) => value + 1);
+        };
+
+        void loadAvailability();
+        window.addEventListener('focus', handleFocus);
+        return () => {
+            active = false;
+            availabilityRequestId.current += 1;
+            window.removeEventListener('focus', handleFocus);
+        };
+    }, [availabilityRetry, userId]);
+
+    useEffect(() => {
+        let active = true;
+        const requestId = ++historyRequestId.current;
+        if (!userId || !activeType) {
+            return () => {
+                active = false;
+                historyRequestId.current += 1;
+            };
+        }
+
+        const requestedUserId = userId;
+        const requestedType = activeType;
+
+        getExaminationResults(requestedUserId, requestedType)
+            .then((results) => {
+                if (!active
+                    || requestId !== historyRequestId.current
+                    || currentUserId.current !== requestedUserId
+                    || currentActiveType.current !== requestedType) return;
+                setExaminationHistory({
+                    status: 'loaded',
+                    userId: requestedUserId,
+                    type: requestedType,
+                    retry: historyRetry,
+                    hasQuizResult: results.quizResults.length > 0,
+                    hasExaminationResult: results.roboExaminationResults.length > 0,
+                });
+            })
+            .catch((error) => {
+                if (!active
+                    || requestId !== historyRequestId.current
+                    || currentUserId.current !== requestedUserId
+                    || currentActiveType.current !== requestedType) return;
+                console.error('Examination history loading failed:', error);
+                setExaminationHistory({
+                    status: 'error',
+                    userId: requestedUserId,
+                    type: requestedType,
+                    retry: historyRetry,
+                    error: getErrorMessage(error, 'Saved examination results could not be checked.'),
+                });
+            });
+
+        return () => {
+            active = false;
+            historyRequestId.current += 1;
+        };
+    }, [activeType, historyRetry, userId]);
 
     // Safety: clear both inline-style AND class-based overflow locks.
     // index.css contains body.of-hidden, body.modal_show, and html.fp-enabled rules
@@ -305,6 +415,11 @@ function HomePage() {
 
     // Anonymous visitors never fetch, so they see the fallback immediately instead of a loading skeleton.
     const displayStats = userId ? stats : FALLBACK_STATS;
+    const historyMatchesCurrentAssessment = userId
+        && examinationHistory.userId === userId
+        && examinationHistory.type === activeType
+        && (examinationHistory.retry === historyRetry || examinationHistory.status === 'loaded');
+    const isHistoryLoading = userId && !historyMatchesCurrentAssessment;
 
     // Konami code easter egg — useRef tracks index without triggering re-renders
     useEffect(() => {
@@ -334,16 +449,89 @@ function HomePage() {
 
             {/* ── Hero ─────────────────────────────────────────────────────── */}
             <section className='hp-hero' aria-labelledby='hero-title'>
-                <div className='hero-content'>
-                    <h1 className='hero-title' id='hero-title'>
-                        Welcome, <br />
-                        <span>Fellow Builders</span>
-                    </h1>
-                    <p className='hero-subtitle' ref={subtitleRef} aria-live='polite'></p>
+                <div className='hero-main'>
+                    <div className='hero-content'>
+                        <h1 className='hero-title' id='hero-title'>
+                            Welcome, <br />
+                            <span>Fellow Builders</span>
+                        </h1>
+                        <p className='hero-subtitle' ref={subtitleRef} aria-live='polite'></p>
+                    </div>
+                    <div className='robot-container' aria-hidden='true'>
+                        <img src={robotImage} alt='' className='robot-anim' role='presentation' />
+                    </div>
                 </div>
-                <div className='robot-container' aria-hidden='true'>
-                    <img src={robotImage} alt='' className='robot-anim' role='presentation' />
-                </div>
+
+                {availability.status === 'loading' && (
+                    <section className='assessment-announcement' aria-label='Active assessment'>
+                        <p role='status'>Checking for an active assessment...</p>
+                    </section>
+                )}
+                {availability.status === 'error' && (
+                    <section className='assessment-announcement' aria-label='Active assessment'>
+                        <div role='alert'>
+                            <p>{availability.error}</p>
+                            <button
+                                type='button'
+                                className='assessment-announcement__button'
+                                onClick={() => setAvailabilityRetry((value) => value + 1)}
+                            >
+                                Retry
+                            </button>
+                        </div>
+                    </section>
+                )}
+                {availability.status === 'ready' && availability.examination && (
+                    <section
+                        className='assessment-announcement assessment-announcement--active'
+                        aria-labelledby='assessment-title'
+                    >
+                        <div>
+                            <p className='assessment-announcement__eyebrow'>Assessment open</p>
+                            <h2 id='assessment-title'>Active Robo assessment: {availability.examination.type}</h2>
+                            {!userId && (
+                                <p>
+                                    <Link to='/login' className='assessment-announcement__link'>Log in to continue</Link>
+                                </p>
+                            )}
+                            {isHistoryLoading && (
+                                <p role='status'>Checking your saved examination results...</p>
+                            )}
+                            {historyMatchesCurrentAssessment && examinationHistory.status === 'error' && (
+                                <div role='alert'>
+                                    <p>{examinationHistory.error}</p>
+                                    <button
+                                        type='button'
+                                        className='assessment-announcement__button'
+                                        onClick={() => setHistoryRetry((value) => value + 1)}
+                                    >
+                                        Retry checking results
+                                    </button>
+                                </div>
+                            )}
+                            {historyMatchesCurrentAssessment
+                                && examinationHistory.status === 'loaded'
+                                && (examinationHistory.hasQuizResult || examinationHistory.hasExaminationResult) && (
+                                    <div className='assessment-announcement__actions'>
+                                        <Link to='/robo-examination/results' className='assessment-announcement__link'>
+                                            View examination results
+                                        </Link>
+                                        {examinationHistory.hasQuizResult && !examinationHistory.hasExaminationResult && (
+                                            <Link to='/robo-examination' className='assessment-announcement__secondary'>
+                                                Continue to RoboExamination
+                                            </Link>
+                                        )}
+                                    </div>
+                                )}
+                            {historyMatchesCurrentAssessment
+                                && examinationHistory.status === 'loaded'
+                                && !examinationHistory.hasQuizResult
+                                && !examinationHistory.hasExaminationResult && (
+                                    <Link to='/quiz' className='assessment-announcement__link'>Start RoboQuiz</Link>
+                                )}
+                        </div>
+                    </section>
+                )}
             </section>
 
             {/* ── Platform Feature Cards ────────────────────────────────────── */}

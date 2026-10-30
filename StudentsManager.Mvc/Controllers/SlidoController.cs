@@ -1,12 +1,14 @@
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
 using StudentsManager.Mvc.Domain.Inputs.Forum;
+using StudentsManager.Mvc.Persistence;
 using StudentsManager.Mvc.Services.Forum;
 
 namespace StudentsManager.Mvc.Controllers
 {
     [Route("api/[controller]")]
     [ApiController]
-    public class SlidoController(IForumService service) : ControllerBase
+    public class SlidoController(IForumService service, ManagerDbContext dbContext) : ControllerBase
     {
         // GET: api/slido?limit=20&skip=0
         [HttpGet]
@@ -23,12 +25,17 @@ namespace StudentsManager.Mvc.Controllers
 
         // POST: api/slido/comment
         [HttpPost("comment")]
-        public async Task<IActionResult> PostComment([FromBody] Comment input)
+        public async Task<IActionResult> PostComment([FromBody] CommentInput input)
         {
             if (string.IsNullOrWhiteSpace(input.Description) || input.ForumQuestionId == 0)
                 return BadRequest("Comment cannot be empty");
 
-            await service.SaveCommentAsync(input,Guid.Parse("1eac9820-5e6e-4d10-6e94-08de36f40f78"));
+            if (!await UserExistsAsync(input.UserId))
+                return Unauthorized("A valid signed-in user is required");
+
+            await service.SaveCommentAsync(
+                new Comment { Description = input.Description, ForumQuestionId = input.ForumQuestionId },
+                input.UserId);
 
             return Ok("Comment posted successfully");
         }
@@ -48,14 +55,21 @@ namespace StudentsManager.Mvc.Controllers
             if (string.IsNullOrWhiteSpace(input.Question))
                 return BadRequest("Question cannot be empty");
 
-            await service.SaveQuestionAsync(
-                input.Question,
-                Guid.Parse("1eac9820-5e6e-4d10-6e94-08de36f40f78"));
+            if (!await UserExistsAsync(input.UserId))
+                return Unauthorized("A valid signed-in user is required");
+
+            await service.SaveQuestionAsync(input.Question, input.UserId);
 
             return Ok("Question posted successfully");
         }
+
+        private Task<bool> UserExistsAsync(Guid userId) =>
+            userId == Guid.Empty
+                ? Task.FromResult(false)
+                : dbContext.Users.AnyAsync(user => user.Id == userId);
     }
 
-    public record struct QuestionInput(string Question);
+    public record struct QuestionInput(string Question, Guid UserId);
+    public record struct CommentInput(string Description, int ForumQuestionId, Guid UserId);
     public record struct QuestionCommentsView(int ForumQuestionId, string ForumQuestionDescription, string[]? Comments);
 }

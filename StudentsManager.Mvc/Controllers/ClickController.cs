@@ -37,8 +37,7 @@ namespace StudentsManager.Mvc.Controllers
         public async Task<IActionResult> SaveResults([FromForm] ClickResultsRootObject rootObject)
         {
             var questionsContentType = TempData["QuestionsContentType"].ToString() ?? throw new ArgumentNullException();
-            await _service.SaveAndPublishAnswersAsync(rootObject, _principalService.GetUserIdByClaimsPrincipal(User),
-                questionsContentType);
+            await _service.SaveAndPublishAnswersAsync(rootObject, _principalService.GetUserIdByClaimsPrincipal(User), questionsContentType);
             return Ok(new SaveResultsModel(true));
         }
     }

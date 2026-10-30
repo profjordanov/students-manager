@@ -356,6 +356,28 @@ namespace StudentsManager.Mvc.Persistence
                 .HasComment("Personality trait of the chosen statement");
         }
 
+        public static void ConfigureUsersScore(this ModelBuilder builder)
+        {
+            builder.Entity<UserScore>(entity =>
+            {
+                entity.ToTable("UsersScore");
+
+                entity.HasKey(score => score.UserId);
+
+                entity
+                    .HasOne(score => score.User)
+                    .WithOne()
+                    .HasForeignKey<UserScore>(score => score.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity.Property(score => score.FirstExaminationScore).HasPrecision(18, 2);
+                entity.Property(score => score.SecondExaminationScore).HasPrecision(18, 2);
+                entity.Property(score => score.Points).HasPrecision(18, 2);
+
+                entity.Ignore(score => score.Total);
+            });
+        }
+
         public static void ConfigurePowerUpAnalyses(this ModelBuilder builder)
         {
             builder
@@ -376,6 +398,142 @@ namespace StudentsManager.Mvc.Persistence
                 .IsRequired()
                 .IsUnicode()
                 .HasComment("Analysis based on the user's survey and personality test");
+        }
+
+        public static void ConfigureRoboQuizzes(this ModelBuilder builder)
+        {
+            builder.Entity<RoboQuiz>()
+                .Property(quiz => quiz.Type)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Entity<RoboQuiz>()
+                .Property(quiz => quiz.Variant)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Entity<RoboQuiz>()
+                .Property(quiz => quiz.StringifiedJsonContent)
+                .IsRequired()
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<RoboQuiz>()
+                .HasIndex(quiz => new { quiz.Type, quiz.Variant })
+                .IsUnique();
+
+            builder.Entity<RoboQuizUserResult>()
+                .HasIndex(result => new { result.UserId, result.RoboQuizId })
+                .IsUnique();
+
+            builder.Entity<RoboQuizUserResult>()
+                .ToTable(table => table.HasCheckConstraint(
+                    "CK_RoboQuizUserResults_ScorePercentage",
+                    "[ScorePercentage] BETWEEN 0 AND 100"));
+
+            builder.Entity<RoboQuizUserResult>()
+                .HasOne(result => result.RoboQuiz)
+                .WithMany(quiz => quiz.Results)
+                .HasForeignKey(result => result.RoboQuizId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            builder.Entity<RoboQuizUserResult>()
+                .HasOne(result => result.User)
+                .WithMany(user => user.RoboQuizResults)
+                .HasForeignKey(result => result.UserId)
+                .IsRequired();
+
+            builder.Entity<RoboQuizAttempt>()
+                .HasIndex(attempt => new { attempt.UserId, attempt.ExaminationType })
+                .IsUnique();
+
+            builder.Entity<RoboQuizAttempt>()
+                .Property(attempt => attempt.ExaminationType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Entity<RoboQuizAttempt>()
+                .HasOne(attempt => attempt.Quiz)
+                .WithMany()
+                .HasForeignKey(attempt => attempt.RoboQuizId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            builder.Entity<RoboQuizAttempt>()
+                .HasOne(attempt => attempt.User)
+                .WithMany()
+                .HasForeignKey(attempt => attempt.UserId)
+                .IsRequired();
+        }
+
+        public static void ConfigureRoboExaminations(this ModelBuilder builder)
+        {
+            builder.Entity<RoboExamination>()
+                .Property(examination => examination.Type)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Entity<RoboExamination>()
+                .Property(examination => examination.Variant)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Entity<RoboExamination>()
+                .Property(examination => examination.StringifiedJsonContent)
+                .IsRequired()
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<RoboExamination>()
+                .HasIndex(examination => new { examination.Type, examination.Variant })
+                .IsUnique();
+
+            builder.Entity<RoboExaminationAttempt>()
+                .HasIndex(attempt => new { attempt.UserId, attempt.ExaminationType })
+                .IsUnique();
+
+            builder.Entity<RoboExaminationAttempt>()
+                .Property(attempt => attempt.ExaminationType)
+                .IsRequired()
+                .HasMaxLength(100);
+
+            builder.Entity<RoboExaminationAttempt>()
+                .Property(attempt => attempt.AnswersJson)
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<RoboExaminationAttempt>()
+                .Property(attempt => attempt.RawEvaluation)
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<RoboExaminationAttempt>()
+                .Property(attempt => attempt.EvaluationError)
+                .HasMaxLength(2000);
+
+            builder.Entity<RoboExaminationAttempt>()
+                .Property(attempt => attempt.Feedback)
+                .HasColumnType("nvarchar(max)");
+
+            builder.Entity<RoboExaminationAttempt>()
+                .Property(attempt => attempt.EvaluationStatus)
+                .HasConversion<string>()
+                .HasMaxLength(20);
+
+            builder.Entity<RoboExaminationAttempt>()
+                .ToTable(table => table.HasCheckConstraint(
+                    "CK_RoboExaminationAttempts_Grade",
+                    "[Grade] IS NULL OR [Grade] BETWEEN 2 AND 6"));
+
+            builder.Entity<RoboExaminationAttempt>()
+                .HasOne(attempt => attempt.Examination)
+                .WithMany(examination => examination.Attempts)
+                .HasForeignKey(attempt => attempt.RoboExaminationId)
+                .OnDelete(DeleteBehavior.Restrict)
+                .IsRequired();
+
+            builder.Entity<RoboExaminationAttempt>()
+                .HasOne(attempt => attempt.User)
+                .WithMany(user => user.RoboExaminationAttempts)
+                .HasForeignKey(attempt => attempt.UserId)
+                .IsRequired();
         }
 
         public static void ConfigurePersonalityTestResults(this ModelBuilder builder)

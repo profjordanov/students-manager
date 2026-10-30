@@ -2,7 +2,18 @@ import { useRef, useEffect } from 'react';
 import gsap from 'gsap';
 import { SCORE_ANIM_DURATION } from './quizConstants';
 
-function QuizResults({ scoreDetails, totalQuestions, answers, onReview, onRestart }) {
+function QuizResults({
+    scoreDetails,
+    totalQuestions,
+    answers,
+    submitStatus,
+    submitError,
+    onRetrySubmit,
+    onContinue,
+    canContinue,
+    quizType,
+    quizVariant,
+}) {
     const scoreDisplayRef = useRef(null);
     const { correctCount, percentage, points, passed } = scoreDetails;
 
@@ -31,7 +42,7 @@ function QuizResults({ scoreDetails, totalQuestions, answers, onReview, onRestar
 
     const resultMessage = passed
         ? 'Машина!'
-        : points === 0.5
+        : points >= 2.5
             ? 'Има напредък, продължавай.'
             : 'Нищо, другият път по-добре!';
 
@@ -39,7 +50,7 @@ function QuizResults({ scoreDetails, totalQuestions, answers, onReview, onRestar
         <section className="quiz-results">
             <div className="quiz-results__card">
                 <span className="quiz-results__eyebrow">Резултат</span>
-                <h2>JavaScript & React тест</h2>
+                <h2>Вариант {quizVariant} ({quizType})</h2>
                 <p
                     ref={scoreDisplayRef}
                     className={`quiz-results__score ${scoreModifier}`}
@@ -55,6 +66,26 @@ function QuizResults({ scoreDetails, totalQuestions, answers, onReview, onRestar
                 <p className="quiz-results__meta">
                     {correctCount} от {totalQuestions} верни отговора
                 </p>
+                <p className="quiz-results__meta" role="status" aria-live="polite">
+                    {submitStatus === 'submitting' && 'Записване на резултата...'}
+                    {(submitStatus === 'saved' || submitStatus === 'duplicate') && 'Резултатът е записан.'}
+                    {submitStatus === 'failed' && (submitError || 'Резултатът не може да бъде записан.')}
+                </p>
+                {submitStatus === 'failed' && (
+                    <button type="button" className="soge-btn" onClick={onRetrySubmit}>
+                        Опитай отново да запишеш резултата
+                    </button>
+                )}
+                <div className="quiz-results__actions">
+                    <button
+                        type="button"
+                        className="soge-btn soge-btn--primary"
+                        onClick={onContinue}
+                        disabled={!canContinue}
+                    >
+                        Continue to RoboExamination
+                    </button>
+                </div>
                 <div className="quiz-results__summary">
                     {answers.map((answer, index) => (
                         <span
@@ -64,18 +95,6 @@ function QuizResults({ scoreDetails, totalQuestions, answers, onReview, onRestar
                             aria-label={`Въпрос ${index + 1}: ${answer.isCorrect ? 'верен' : 'грешен'}`}
                         />
                     ))}
-                </div>
-                <div className="quiz-results__actions">
-                    <button type="button" className="soge-btn" onClick={onReview}>
-                        Прегледай отговорите
-                    </button>
-                    <button
-                        type="button"
-                        className="soge-btn soge-btn--primary"
-                        onClick={onRestart}
-                    >
-                        Нов опит
-                    </button>
                 </div>
             </div>
         </section>
