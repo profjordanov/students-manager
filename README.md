@@ -13,7 +13,7 @@ StudentsManager is a teaching platform for managing course activity at the Unive
 | Environment | URL | Purpose |
 |---|---|---|
 | Server & API | https://students-manager.azurewebsites.net/ | Development deployment and API examples below |
-| React SPA | https://students-manager-spa.azurewebsites.net/ | React version of the platform |
+| React SPA | https://students-manager-spa-ehfpf6a6ekaddwgw.westeurope-01.azurewebsites.net/ | React version of the platform |
 
 ## Architecture
 
