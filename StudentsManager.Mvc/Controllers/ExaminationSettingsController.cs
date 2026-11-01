@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using StudentsManager.Mvc.Controllers._Base;
 using StudentsManager.Mvc.Services.CourseExaminations;
 
 namespace StudentsManager.Mvc.Controllers
@@ -7,6 +8,7 @@ namespace StudentsManager.Mvc.Controllers
     [ApiController]
     public class ExaminationSettingsController(IExaminationSettingsService service) : ControllerBase
     {
+        [RequireAdminKey]
         [HttpGet("enable/first")]
         public async Task<IActionResult> EnableFirst()
         {
@@ -14,6 +16,7 @@ namespace StudentsManager.Mvc.Controllers
             return Ok("First test enabled!");
         }
 
+        [RequireAdminKey]
         [HttpGet("disable/first")]
         public async Task<IActionResult> DisableFirst()
         {
@@ -21,6 +24,7 @@ namespace StudentsManager.Mvc.Controllers
             return Ok("First test disabled!");
         }
 
+        [RequireAdminKey]
         [HttpGet("enable/second")]
         public async Task<IActionResult> EnableSecond()
         {
@@ -28,6 +32,7 @@ namespace StudentsManager.Mvc.Controllers
             return Ok("Second tests enabled!");
         }
 
+        [RequireAdminKey]
         [HttpGet("disable/second")]
         public async Task<IActionResult> DisableSecond()
         {

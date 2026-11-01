@@ -35,7 +35,7 @@ namespace StudentsManager.Mvc.Configurations
         {
             services.Configure<MailSettings>(configuration.GetSection(nameof(MailSettings)));
             services.Configure<ServiceBusSettings>(configuration.GetSection(nameof(ServiceBusSettings)));
-            services.Configure<RoboExaminationSettings>(configuration.GetSection(nameof(RoboExaminationSettings)));
+            services.Configure<AdminExaminationSettings>(configuration.GetSection(nameof(AdminExaminationSettings)));
             services.Configure<StorageSettings>(configuration.GetSection(nameof(StorageSettings)));
             services.Configure<AgentFrameworkAppSettings>(configuration.GetSection(nameof(AgentFrameworkAppSettings)));
 
