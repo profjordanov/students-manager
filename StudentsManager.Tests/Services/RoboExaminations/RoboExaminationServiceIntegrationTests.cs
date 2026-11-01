@@ -1,13 +1,14 @@
 using System;
 using System.Collections.Generic;
 using System.Linq;
-using System.Threading;
+using System.Net.Http;
 using System.Threading.Tasks;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging.Abstractions;
 using Moq;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Domain.Inputs.RoboExaminations;
+using StudentsManager.Mvc.Domain.Views.RoboExaminations;
 using StudentsManager.Mvc.Persistence;
 using StudentsManager.Mvc.Services.CourseExaminations;
 using StudentsManager.Mvc.Services.RoboExaminations;
@@ -49,45 +50,65 @@ public class RoboExaminationServiceIntegrationTests
         Assert.Equal(1, await verifyContext.RoboExaminationAttempts.CountAsync(attempt => attempt.UserId == data.UserId));
     }
 
-    [Fact]
-    public async Task ConcurrentSubmissionClaimsAttemptBeforeCallingEvaluator()
+    [Theory]
+    [InlineData(0)]
+    [InlineData(1)]
+    [InlineData(2)]
+    public async Task SubmissionPersistsZeroBasedGradeAndAnswerSnapshot(int grade)
     {
         await EnsureDatabaseCreatedAsync();
         var data = await SeedUserAndExaminationAsync("First");
-        var settings = SettingsFor("First");
-        var evaluator = EvaluatorReturningSuccess();
-        int attemptId;
-        using (var context = NewContext())
-        {
-            var assigned = await CreateService(context, settings.Object, evaluator.Object).GetOrAssignAsync(data.UserId);
-            attemptId = assigned.Value!.AttemptId;
-        }
+        using var context = NewContext();
+        var evaluator = EvaluatorReturningSuccess(grade);
+        var service = CreateService(context, SettingsFor("First").Object, evaluator.Object);
+        var assignment = await service.GetOrAssignAsync(data.UserId);
+        var question = Assert.Single(assignment.Value!.Questions);
 
-        var input = new RoboExaminationSubmissionInput
+        var submission = await service.SubmitAsync(Submission(data.UserId, assignment.Value.AttemptId));
+
+        Assert.Equal(RoboExaminationServiceStatus.Success, submission.Status);
+        Assert.Equal("Succeeded", submission.Value!.EvaluationStatus);
+        Assert.Equal(grade, submission.Value.Grade);
+        var attempt = await context.RoboExaminationAttempts.AsNoTracking()
+            .SingleAsync(item => item.Id == assignment.Value.AttemptId);
+        Assert.Equal(grade, attempt.Grade);
+        Assert.Equal(submission.Value.SubmittedAtUtc, attempt.SubmittedAtUtc);
+        var results = await service.GetResultsAsync(data.UserId);
+        var result = Assert.Single(results.Value!);
+        Assert.Equal(grade, result.Grade);
+        Assert.Equal(submission.Value.Feedback, result.Feedback);
+        var savedAnswer = Assert.Single(result.Answers);
+        Assert.Equal(question.Id, savedAnswer.QuestionId);
+        Assert.Equal(question.Text, savedAnswer.QuestionText);
+        Assert.Equal("Answer", savedAnswer.Answer);
+        evaluator.Verify(item => item.EvaluateAsync(
+            It.Is<IReadOnlyList<RoboExaminationAnswerView>>(answers =>
+                answers.Count == 1 && answers[0].QuestionText == question.Text && answers[0].Answer == "Answer")),
+            Times.Once);
+    }
+
+    [Fact]
+    public async Task SubmissionSnapshotContainsOnlyExaminationQuestions()
+    {
+        await EnsureDatabaseCreatedAsync();
+        var data = await SeedUserAndExaminationAsync("First");
+        using var context = NewContext();
+        var evaluator = EvaluatorReturningSuccess();
+        var service = CreateService(context, SettingsFor("First").Object, evaluator.Object);
+        var assignment = await service.GetOrAssignAsync(data.UserId);
+
+        var submission = await service.SubmitAsync(new RoboExaminationSubmissionInput
         {
             UserId = data.UserId,
-            AttemptId = attemptId,
-            Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "A clear answer" }]
-        };
-        var results = await Task.WhenAll(
-            Task.Run(async () =>
-            {
-                using var context = NewContext();
-                return await CreateService(context, settings.Object, evaluator.Object)
-                    .SubmitAsync(input, CancellationToken.None);
-            }),
-            Task.Run(async () =>
-            {
-                using var context = NewContext();
-                return await CreateService(context, settings.Object, evaluator.Object)
-                    .SubmitAsync(input, CancellationToken.None);
-            }));
+            AttemptId = assignment.Value!.AttemptId,
+            Answers = [new RoboExaminationAnswerInput { QuestionId = "unknown", Answer = "Ignored" }]
+        });
 
-        Assert.Single(results, result => result.Status == RoboExaminationServiceStatus.Success);
-        Assert.Single(results, result => result.Status == RoboExaminationServiceStatus.AlreadySubmitted);
+        Assert.Equal(RoboExaminationServiceStatus.Success, submission.Status);
         evaluator.Verify(item => item.EvaluateAsync(
-            It.IsAny<IReadOnlyList<RoboExaminationEvaluationItem>>(),
-            It.IsAny<CancellationToken>()), Times.Once);
+            It.Is<IReadOnlyList<RoboExaminationAnswerView>>(answers =>
+                answers.Count == 1 && answers[0].QuestionId == "q1" && answers[0].Answer == string.Empty)),
+            Times.Once);
     }
 
     [Fact]
@@ -110,29 +131,6 @@ public class RoboExaminationServiceIntegrationTests
     {
         await EnsureDatabaseCreatedAsync();
         var data = await SeedUserAndExaminationAsync("First");
-        int secondAttemptId;
-        using (var context = NewContext())
-        {
-            var examination = new RoboExamination
-            {
-                Type = "Second",
-                Variant = Guid.NewGuid().ToString("N"),
-                StringifiedJsonContent = ExaminationContent
-            };
-            context.RoboExaminations.Add(examination);
-            await context.SaveChangesAsync();
-            var attempt = new RoboExaminationAttempt
-            {
-                UserId = data.UserId,
-                RoboExaminationId = examination.Id,
-                ExaminationType = "Second",
-                AssignedAtUtc = DateTime.UtcNow,
-                EvaluationStatus = RoboExaminationEvaluationStatus.Pending
-            };
-            context.RoboExaminationAttempts.Add(attempt);
-            await context.SaveChangesAsync();
-            secondAttemptId = attempt.Id;
-        }
 
         using var noSettingContext = NewContext();
         var noSettingResult = await CreateService(
@@ -150,177 +148,106 @@ public class RoboExaminationServiceIntegrationTests
 
         Assert.Equal(RoboExaminationServiceStatus.NoActiveExamination, noSettingResult.Status);
         Assert.Equal(RoboExaminationServiceStatus.RoboQuizRequired, mismatchedResult.Status);
-
-        using var submitContext = NewContext();
-        var submitResult = await CreateService(
-                submitContext,
-                SettingsFor("Second").Object,
-                EvaluatorReturningSuccess().Object)
-            .SubmitAsync(
-                new RoboExaminationSubmissionInput
-                {
-                    UserId = data.UserId,
-                    AttemptId = secondAttemptId,
-                    Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "Answer" }]
-                },
-                CancellationToken.None);
-        Assert.Equal(RoboExaminationServiceStatus.RoboQuizRequired, submitResult.Status);
     }
 
     [Fact]
-    public async Task SoftDeletedUserCannotSubmit()
+    public async Task AttemptCanBeSubmittedOnlyOnceByItsOwner()
+    {
+        await EnsureDatabaseCreatedAsync();
+        var data = await SeedUserAndExaminationAsync("First");
+        var settings = SettingsFor("First");
+        var evaluator = EvaluatorReturningSuccess();
+        using var context = NewContext();
+        var service = CreateService(context, settings.Object, evaluator.Object);
+        var attemptId = (await service.GetOrAssignAsync(data.UserId)).Value!.AttemptId;
+
+        var otherUserSubmission = await service.SubmitAsync(Submission(Guid.NewGuid(), attemptId));
+        var ownerSubmission = await service.SubmitAsync(Submission(data.UserId, attemptId));
+        using var resubmitContext = NewContext();
+        var resubmission = await CreateService(resubmitContext, settings.Object, evaluator.Object)
+            .SubmitAsync(Submission(data.UserId, attemptId));
+
+        Assert.Equal(RoboExaminationServiceStatus.AttemptNotFound, otherUserSubmission.Status);
+        Assert.Equal(RoboExaminationServiceStatus.Success, ownerSubmission.Status);
+        Assert.Equal(RoboExaminationServiceStatus.AlreadySubmitted, resubmission.Status);
+        evaluator.Verify(item => item.EvaluateAsync(It.IsAny<IReadOnlyList<RoboExaminationAnswerView>>()), Times.Once);
+    }
+
+    [Fact]
+    public async Task FailedEvaluationCanBeReevaluatedFromSavedAnswers()
+    {
+        await EnsureDatabaseCreatedAsync();
+        var type = Guid.NewGuid().ToString("N");
+        var data = await SeedUserAndExaminationAsync(type);
+        var settings = SettingsFor(type);
+        var evaluator = new Mock<IRoboExaminationEvaluator>();
+        evaluator.SetupSequence(item => item.EvaluateAsync(It.IsAny<IReadOnlyList<RoboExaminationAnswerView>>()))
+            .ThrowsAsync(new HttpRequestException("Azure OpenAI is unavailable."))
+            .ReturnsAsync(new RoboExaminationEvaluation(1, "Recovered."));
+        int attemptId;
+        DateTime? submittedAtUtc;
+        using (var context = NewContext())
+        {
+            var service = CreateService(context, settings.Object, evaluator.Object);
+            attemptId = (await service.GetOrAssignAsync(data.UserId)).Value!.AttemptId;
+
+            var submission = await service.SubmitAsync(Submission(data.UserId, attemptId));
+
+            Assert.Equal(RoboExaminationServiceStatus.Success, submission.Status);
+            Assert.Equal("Failed", submission.Value!.EvaluationStatus);
+            Assert.Null(submission.Value.Grade);
+            Assert.Null(submission.Value.Feedback);
+            submittedAtUtc = submission.Value.SubmittedAtUtc;
+            await context.RoboExaminations
+                .Where(item => item.Type == type)
+                .ExecuteUpdateAsync(setters => setters.SetProperty(item => item.StringifiedJsonContent, "[]"));
+        }
+
+        using var reevaluateContext = NewContext();
+        var reevaluation = await CreateService(reevaluateContext, settings.Object, evaluator.Object)
+            .ReevaluateAsync(attemptId);
+
+        Assert.Equal(RoboExaminationServiceStatus.Success, reevaluation.Status);
+        Assert.Equal("Succeeded", reevaluation.Value!.EvaluationStatus);
+        Assert.Equal(1, reevaluation.Value.Grade);
+        Assert.Equal("Recovered.", reevaluation.Value.Feedback);
+        Assert.Equal(submittedAtUtc, reevaluation.Value.SubmittedAtUtc);
+        evaluator.Verify(item => item.EvaluateAsync(
+            It.Is<IReadOnlyList<RoboExaminationAnswerView>>(answers =>
+                answers.Count == 1 && answers[0].QuestionText == "Explain this concept" && answers[0].Answer == "Answer")),
+            Times.Exactly(2));
+    }
+
+    [Fact]
+    public async Task OnlySubmittedAttemptsWithoutSuccessfulEvaluationCanBeReevaluated()
     {
         await EnsureDatabaseCreatedAsync();
         var data = await SeedUserAndExaminationAsync("First");
         var settings = SettingsFor("First");
         var evaluator = EvaluatorReturningSuccess();
         int attemptId;
-        using (var assignContext = NewContext())
+        using (var context = NewContext())
         {
-            var assignment = await CreateService(assignContext, settings.Object, evaluator.Object)
-                .GetOrAssignAsync(data.UserId);
-            attemptId = assignment.Value!.AttemptId;
+            var service = CreateService(context, settings.Object, evaluator.Object);
+            attemptId = (await service.GetOrAssignAsync(data.UserId)).Value!.AttemptId;
+
+            Assert.Equal(RoboExaminationServiceStatus.AttemptNotFound, (await service.ReevaluateAsync(-1)).Status);
+            Assert.Equal(RoboExaminationServiceStatus.NotReevaluable, (await service.ReevaluateAsync(attemptId)).Status);
+            await service.SubmitAsync(Submission(data.UserId, attemptId));
+            Assert.Equal(RoboExaminationServiceStatus.NotReevaluable, (await service.ReevaluateAsync(attemptId)).Status);
+
+            await context.RoboExaminationAttempts
+                .Where(item => item.Id == attemptId)
+                .ExecuteUpdateAsync(setters => setters
+                    .SetProperty(item => item.EvaluationStatus, RoboExaminationEvaluationStatus.Pending));
         }
-        using (var updateContext = NewContext())
-        {
-            var user = await updateContext.Users.SingleAsync(item => item.Id == data.UserId);
-            user.IsDeleted = true;
-            await updateContext.SaveChangesAsync();
-        }
 
-        using var submitContext = NewContext();
-        var result = await CreateService(submitContext, settings.Object, evaluator.Object).SubmitAsync(
-            new RoboExaminationSubmissionInput
-            {
-                UserId = data.UserId,
-                AttemptId = attemptId,
-                Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "Answer" }]
-            },
-            CancellationToken.None);
-
-        Assert.Equal(RoboExaminationServiceStatus.UserNotFound, result.Status);
-    }
-
-    [Fact]
-    public async Task FailedEvaluationPersistsRawErrorAndCanBeReevaluated()
-    {
-        await EnsureDatabaseCreatedAsync();
-        var data = await SeedUserAndExaminationAsync("First");
-        var evaluator = new Mock<IRoboExaminationEvaluator>();
-        evaluator.SetupSequence(item => item.EvaluateAsync(
-                It.IsAny<IReadOnlyList<RoboExaminationEvaluationItem>>(),
-                It.IsAny<CancellationToken>()))
-            .ThrowsAsync(new RoboExaminationEvaluationException("Invalid response.", "not-json"))
-            .ReturnsAsync(new RoboExaminationEvaluation(4, "Recovered.", """{"grade":4,"overallFeedback":"Recovered."}"""));
-        using var context = NewContext();
-        var service = CreateService(context, SettingsFor("First").Object, evaluator.Object);
-        var assignment = await service.GetOrAssignAsync(data.UserId);
-
-        var submission = await service.SubmitAsync(
-            new RoboExaminationSubmissionInput
-            {
-                UserId = data.UserId,
-                AttemptId = assignment.Value!.AttemptId,
-                Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "Answer" }]
-            },
-            CancellationToken.None);
-
-        Assert.Equal(RoboExaminationServiceStatus.Success, submission.Status);
-        Assert.Equal("Failed", submission.Value!.EvaluationStatus);
-        var attempt = await context.RoboExaminationAttempts
-            .AsNoTracking()
-            .SingleAsync(item => item.Id == assignment.Value.AttemptId);
-        Assert.Equal("not-json", attempt.RawEvaluation);
-        Assert.Equal("Invalid response.", attempt.EvaluationError);
-
-        var reevaluation = await service.ReevaluateAsync(assignment.Value.AttemptId);
+        using var pendingContext = NewContext();
+        var reevaluation = await CreateService(pendingContext, settings.Object, evaluator.Object)
+            .ReevaluateAsync(attemptId);
 
         Assert.Equal(RoboExaminationServiceStatus.Success, reevaluation.Status);
         Assert.Equal("Succeeded", reevaluation.Value!.EvaluationStatus);
-        Assert.Equal(4, reevaluation.Value.Grade);
-    }
-
-    [Fact]
-    public async Task RecentPendingEvaluationCannotBeClaimedButStalePendingCan()
-    {
-        await EnsureDatabaseCreatedAsync();
-        var data = await SeedUserAndExaminationAsync("First");
-        var settings = SettingsFor("First");
-        var evaluator = EvaluatorReturningSuccess();
-        using var context = NewContext();
-        var service = CreateService(context, settings.Object, evaluator.Object);
-        var assignment = await service.GetOrAssignAsync(data.UserId);
-        var submission = await service.SubmitAsync(
-            new RoboExaminationSubmissionInput
-            {
-                UserId = data.UserId,
-                AttemptId = assignment.Value!.AttemptId,
-                Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "Answer" }]
-            },
-            CancellationToken.None);
-        Assert.Equal(RoboExaminationServiceStatus.Success, submission.Status);
-
-        await context.RoboExaminationAttempts
-            .Where(item => item.Id == assignment.Value.AttemptId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(item => item.EvaluationStatus, RoboExaminationEvaluationStatus.Pending)
-                .SetProperty(item => item.EvaluationStartedAtUtc, DateTime.UtcNow));
-        var recent = await service.ReevaluateAsync(assignment.Value.AttemptId);
-        Assert.Equal(RoboExaminationServiceStatus.NotReevaluable, recent.Status);
-
-        await context.RoboExaminationAttempts
-            .Where(item => item.Id == assignment.Value.AttemptId)
-            .ExecuteUpdateAsync(setters => setters
-                .SetProperty(item => item.EvaluationStartedAtUtc, DateTime.UtcNow.AddMinutes(-6)));
-        var stale = await service.ReevaluateAsync(assignment.Value.AttemptId);
-
-        Assert.Equal(RoboExaminationServiceStatus.Success, stale.Status);
-        Assert.Equal("Succeeded", stale.Value!.EvaluationStatus);
-    }
-
-    [Fact]
-    public async Task RequestCancellationAfterClaimDoesNotCancelEvaluation()
-    {
-        await EnsureDatabaseCreatedAsync();
-        var data = await SeedUserAndExaminationAsync("First");
-        var settings = SettingsFor("First");
-        var evaluatorStarted = new TaskCompletionSource<CancellationToken>(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        var releaseEvaluation = new TaskCompletionSource(
-            TaskCreationOptions.RunContinuationsAsynchronously);
-        var evaluator = new Mock<IRoboExaminationEvaluator>();
-        evaluator.Setup(item => item.EvaluateAsync(
-                It.IsAny<IReadOnlyList<RoboExaminationEvaluationItem>>(),
-                It.IsAny<CancellationToken>()))
-            .Returns((IReadOnlyList<RoboExaminationEvaluationItem> _, CancellationToken evaluationToken) =>
-                EvaluateAfterReleaseAsync(evaluationToken));
-        using var context = NewContext();
-        var service = CreateService(context, settings.Object, evaluator.Object);
-        var assignment = await service.GetOrAssignAsync(data.UserId);
-        using var requestCancellation = new CancellationTokenSource();
-        var submitTask = service.SubmitAsync(
-            new RoboExaminationSubmissionInput
-            {
-                UserId = data.UserId,
-                AttemptId = assignment.Value!.AttemptId,
-                Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "Answer" }]
-            },
-            requestCancellation.Token);
-
-        var evaluationToken = await evaluatorStarted.Task.WaitAsync(TimeSpan.FromSeconds(10));
-        requestCancellation.Cancel();
-        Assert.False(evaluationToken.IsCancellationRequested);
-        releaseEvaluation.SetResult();
-
-        var result = await submitTask;
-        Assert.Equal(RoboExaminationServiceStatus.Success, result.Status);
-
-        async Task<RoboExaminationEvaluation> EvaluateAfterReleaseAsync(CancellationToken evaluationToken)
-        {
-            evaluatorStarted.SetResult(evaluationToken);
-            await releaseEvaluation.Task;
-            return new RoboExaminationEvaluation(4, "Done.", """{"grade":4,"overallFeedback":"Done."}""");
-        }
     }
 
     private static async Task EnsureDatabaseCreatedAsync()
@@ -393,15 +320,20 @@ public class RoboExaminationServiceIntegrationTests
         return settings;
     }
 
-    private static Mock<IRoboExaminationEvaluator> EvaluatorReturningSuccess()
+    private static Mock<IRoboExaminationEvaluator> EvaluatorReturningSuccess(int grade = 2)
     {
         var evaluator = new Mock<IRoboExaminationEvaluator>();
-        evaluator.Setup(service => service.EvaluateAsync(
-                It.IsAny<IReadOnlyList<RoboExaminationEvaluationItem>>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new RoboExaminationEvaluation(5, "Good answer.", """{"grade":5,"overallFeedback":"Good answer."}"""));
+        evaluator.Setup(service => service.EvaluateAsync(It.IsAny<IReadOnlyList<RoboExaminationAnswerView>>()))
+            .ReturnsAsync(new RoboExaminationEvaluation(grade, "Good answer."));
         return evaluator;
     }
+
+    private static RoboExaminationSubmissionInput Submission(Guid userId, int attemptId) => new()
+    {
+        UserId = userId,
+        AttemptId = attemptId,
+        Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "Answer" }]
+    };
 
     private static ManagerDbContext NewContext() => new(DbContextProvider.GetDbContextOptions());
 

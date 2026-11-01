@@ -520,7 +520,7 @@ namespace StudentsManager.Mvc.Persistence
             builder.Entity<RoboExaminationAttempt>()
                 .ToTable(table => table.HasCheckConstraint(
                     "CK_RoboExaminationAttempts_Grade",
-                    "[Grade] IS NULL OR [Grade] BETWEEN 2 AND 6"));
+                    "[Grade] IS NULL OR [Grade] BETWEEN 0 AND 6"));
 
             builder.Entity<RoboExaminationAttempt>()
                 .HasOne(attempt => attempt.Examination)

@@ -4,7 +4,6 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Azure;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Persistence;
-using StudentsManager.Mvc.Services.AI;
 using StudentsManager.Mvc.Services.AppSettings;
 using StudentsManager.Mvc.Services.Auth;
 using StudentsManager.Mvc.Services.Clicks;
@@ -37,7 +36,6 @@ namespace StudentsManager.Mvc.Configurations
             services.Configure<ServiceBusSettings>(configuration.GetSection(nameof(ServiceBusSettings)));
             services.Configure<AdminExaminationSettings>(configuration.GetSection(nameof(AdminExaminationSettings)));
             services.Configure<StorageSettings>(configuration.GetSection(nameof(StorageSettings)));
-            services.Configure<AgentFrameworkAppSettings>(configuration.GetSection(nameof(AgentFrameworkAppSettings)));
 
             return services;
         }
@@ -142,11 +140,6 @@ namespace StudentsManager.Mvc.Configurations
             services.AddScoped<IRoboExaminationEvaluator, AzureOpenAiRoboExaminationEvaluator>();
 
             services.AddScoped<IExaminationAnswersService, ExaminationAnswersService>();
-
-            services.AddScoped<IFoundryAgent, FoundryAgent>();
-
-            services.AddScoped<IAgentFrameworkService, AgentFrameworkService>();
-
             return services;
         }
 

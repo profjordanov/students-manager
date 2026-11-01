@@ -4,22 +4,12 @@ using Newtonsoft.Json;
 using StudentsManager.Mvc.Domain.Entities;
 using StudentsManager.Mvc.Domain.Inputs.Click;
 using StudentsManager.Mvc.Persistence;
-using StudentsManager.Mvc.Services.Messaging;
 using UserAnswer = StudentsManager.Mvc.Domain.Inputs.Click.UserAnswer;
 
 namespace StudentsManager.Mvc.Services.Clicks
 {
-    public class ClicksService : IClicksService
+    public class ClicksService(ManagerDbContext managerDbContext) : IClicksService
     {
-        private readonly ManagerDbContext _managerDbContext;
-        private readonly IAzureServiceBusSender _serviceBusSender;
-
-        public ClicksService(ManagerDbContext managerDbContext, IAzureServiceBusSender serviceBusSender)
-        {
-            _managerDbContext = managerDbContext;
-            _serviceBusSender = serviceBusSender;
-        }
-
         public object GetQuestionsContent(string type)
         {
             const string resourcePath = "StudentsManager.Mvc.Resources.";
@@ -44,7 +34,7 @@ namespace StudentsManager.Mvc.Services.Clicks
         {
             try
             {
-                var _ = JsonConvert.DeserializeObject<IEnumerable<UserAnswer>>(rootObject.Res);
+                _ = JsonConvert.DeserializeObject<IEnumerable<UserAnswer>>(rootObject.Res);
             }
             catch (Exception e)
             {
@@ -63,8 +53,8 @@ namespace StudentsManager.Mvc.Services.Clicks
                     Form = rootObject.Form,
                     ContentType = questionsContentType
                 };
-                await _managerDbContext.AddAsync(entity);
-                await _managerDbContext.SaveChangesAsync();
+                await managerDbContext.AddAsync(entity);
+                await managerDbContext.SaveChangesAsync();
 
                 return entity;
             }

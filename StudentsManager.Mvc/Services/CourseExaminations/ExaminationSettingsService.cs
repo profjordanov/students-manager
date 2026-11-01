@@ -5,15 +5,8 @@ using StudentsManager.Mvc.Persistence;
 
 namespace StudentsManager.Mvc.Services.CourseExaminations
 {
-    public class ExaminationSettingsService : IExaminationSettingsService
+    public class ExaminationSettingsService(ManagerDbContext dbContext) : IExaminationSettingsService
     {
-        private readonly ManagerDbContext _dbContext;
-
-        public ExaminationSettingsService(ManagerDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
         public async Task<CourseExaminationSettingsView> GetViewAsync()
         {
             return new CourseExaminationSettingsView(await CanAccessTheFirstAsync(), await CanAccessTheSecondAsync());
@@ -21,7 +14,7 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
 
         public Task<CourseExaminationSetting?> GetFirstEnabledAsync()
         {
-            return _dbContext.CourseExaminationSettings
+            return dbContext.CourseExaminationSettings
                 .AsNoTracking()
                 .Where(setting => setting.Enabled)
                 .OrderBy(setting => setting.Id)
@@ -65,15 +58,15 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
             var entity = await FirstByTypeAsync(type)
                 ?? throw new InvalidOperationException($"Examination setting '{type}' is not configured.");
 
-            await _dbContext.CourseExaminationSettings
+            await dbContext
+                .CourseExaminationSettings
                 .Where(setting => enabled || setting.Id == entity.Id)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(setting => setting.Enabled, setting => enabled && setting.Id == entity.Id));
+                .ExecuteUpdateAsync(setters => setters.SetProperty(setting => setting.Enabled, setting => enabled && setting.Id == entity.Id));
         }
 
         private Task<CourseExaminationSetting?> FirstByTypeAsync(string type)
         {
-            return _dbContext
+            return dbContext
                 .CourseExaminationSettings
                 .AsNoTracking()
                 .FirstOrDefaultAsync(setting => setting.Type == type);

@@ -10,8 +10,7 @@ namespace StudentsManager.Mvc.Controllers._Base
     {
         public void OnAuthorization(AuthorizationFilterContext context)
         {
-            var adminKey = context.HttpContext.RequestServices
-                .GetRequiredService<IOptions<AdminExaminationSettings>>().Value.AdminKey;
+            var adminKey = context.HttpContext.RequestServices.GetRequiredService<IOptions<AdminExaminationSettings>>().Value.AdminKey;
 
             if (string.IsNullOrWhiteSpace(adminKey)
                 || !context.HttpContext.Request.Headers.TryGetValue("X-Admin-Key", out var providedKey)
