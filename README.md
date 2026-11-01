@@ -70,7 +70,7 @@ Add `MailSettings` and `AgentFrameworkAppSettings` when working on the features 
 
 By default, the project profile listens on `https://localhost:5001` and `http://localhost:5000`. Startup runs Entity Framework migrations and database seeding, so use a disposable or intentionally prepared local database.
 
-The Azure chat integrations intentionally use `Azure.AI.OpenAI` **2.9.0-beta.1** with `OpenAI` **2.10.0**, also required by the Foundry dependencies. The older stable Azure SDK **2.1.0** calls an internal OpenAI API removed in newer versions and fails at runtime with `MissingMethodException` for `get_SerializedAdditionalRawData`. Do not downgrade OpenAI independently of Foundry. Run the SDK compatibility tests below when changing these packages.
+RoboExamination answers are graded by `AzureOpenAiRoboExaminationEvaluator`, which calls an Azure OpenAI `gpt-4.1-mini` deployment through the stable `OpenAI` package and the Azure v1 endpoint (`<endpoint>/openai/v1/`). It reuses `ServiceBusSettings`: `ServiceBusSettings:AzureConnectionString` holds the Azure OpenAI endpoint (for example `https://<resource>.openai.azure.com/`) and `ServiceBusSettings:QueueName` holds its API key, so keep both in user secrets. The deployment name is the `Deployment` constant in the evaluator. The model must reply with a strict JSON schema (`grade` 0–2 and English `feedback`), which is deserialized directly into the result.
 
 After an SDK update, stop the MVC process, run `dotnet clean`, `dotnet restore`, and `dotnet build` against `StudentsManager.Tests/StudentsManager.Tests.csproj` (which also rebuilds MVC), then restart the application. Already-running processes retain their old assemblies.
 
@@ -114,9 +114,13 @@ The legacy Chatbot endpoints remain for historical data and are no longer used b
 
 An examination is the combination of RoboQuiz and RoboExamination, for either `First` or `Second`. The SPA checks `GET /api/ExaminationSettings/enabled`, which returns `{"id":1,"type":"First"}` or `{"id":2,"type":"Second"}` for the corresponding settings, or HTTP 204 when neither is enabled. Enabling one examination disables the other in the same database statement.
 
-The homepage shows the active examination. Students without results for that type start at `/quiz` with one navigation click (the quiz still has its own instructions/start screen). Background availability refreshes keep the navigation links mounted. After the last answer students see their answers and percentage result; once saved, they can continue to `/robo-examination`. A saved result in either component shows **View examination results**. **Continue to RoboExamination** is offered only while that component has not been submitted. The examination API checks the active type and quiz prerequisite; no minimum quiz score is required.
+The homepage shows the active examination. Students without results for that type start at `/quiz` with one navigation click (the quiz still has its own instructions/start screen). Background availability refreshes keep the navigation links mounted. After the last answer students see their answers and percentage result; once saved, they can continue to `/robo-examination`. A saved result in either component shows **View examination results**. **Continue to RoboExamination** is offered only while that component has not been submitted. The examination API checks the active type and quiz prerequisite when assigning a variant; no minimum quiz score is required.
 
 The `/robo-examination/results` page combines the saved RoboQuiz percentage, variant and completion date with RoboExamination's grade, feedback, answers and evaluation status, filtered to the currently enabled type. Missing components are shown explicitly; pending/failed evaluation does not allow a second submission. Refresh rechecks the enabled type. The underlying result APIs retain full history for existing consumers; the shared SPA results service filters both histories together. No combined numeric grade is calculated because the two components use different scales.
+
+New RoboExamination evaluations use integer grades **0–2** (0 = fail, 2 = excellent). Deploy the `AllowZeroBasedRoboExaminationGrades` EF migration with the backend; startup applies pending migrations. It allows 0 and 1 without converting or deleting historical grades on the former 2–6 scale. The database therefore accepts 0–6 for compatibility, while the evaluator's response schema only allows new grades from 0–2. Rolling back the migration requires resolving any stored 0/1 grades first; rollback does not silently regrade them.
+
+Submission saves the student's answers and then evaluates them in the same request, returning the grade and feedback. The saved snapshot contains every examination question: unanswered questions are saved as empty answers and unknown question IDs are ignored. An attempt can be submitted only once (later submissions return HTTP 409), and evaluation continues if the browser disconnects. If evaluation fails, the attempt is marked `Failed`; failed or pending evaluations can be retried through the evaluation endpoint, which uses the saved question/answer snapshot rather than an edited examination definition.
 
 Provision three definitions per type in **each** of `RoboQuizzes` and `RoboExaminations`, for example `First` variants A/B/C and `Second` variants D/E/F. Content must be provided by instructors; startup does not generate six question sets. Quiz and examination variant names are independent: a student may receive quiz A and examination C. Each component chooses randomly from its type's configured pool, persists the assignment, and reuses it on reload. A student may submit only one variant of each component per type, not every available variant. Adding a variant or toggling the enabled type never resets assignments or results. Existing quiz results also prevent another quiz for that type; historical multiple-variant results remain visible, not deleted.
 
@@ -126,7 +130,9 @@ Add an examination definition with the instructor endpoint. The configured `Robo
 
 Startup upgrades existing examination definitions, including instructor-created variants. Legacy choices become plain-text context within the question, followed by "Answer in your own words"; `options` and `expectedAnswer` fields are removed and the type becomes `text`. Question IDs are preserved (legacy numeric IDs are read as strings), and assignments, submitted answers, and existing grades are not changed. The upgrade is idempotent and saved transactionally before requests are served; malformed legacy questions stop startup with an explicit error instead of losing their context. Back up the database before deploying, as with other data upgrades.
 
-The chatbot uses a full-width, resizable six-row answer box (up to 2000 characters). Enter adds a line break; Ctrl+Enter or Cmd+Enter submits the answer.
+The RoboExamination page prominently states that all answers must be provided in English, and each answer field repeats this requirement in its label. The chatbot uses a full-width, resizable six-row answer box (up to 2000 characters). Enter adds a line break; Ctrl+Enter or Cmd+Enter submits the answer.
+
+After submission, the chatbot displays a confirmation and a link to the results. Status messages use dark text on the light RoboExamination and RoboQuiz page backgrounds.
 
 ```bash
 curl --request POST 'https://students-manager.azurewebsites.net/api/RoboExamination' \
@@ -329,13 +335,14 @@ Run the test project directly:
 dotnet test StudentsManager.Tests/StudentsManager.Tests.csproj
 ```
 
-Run the Azure chat SDK compatibility regression tests without Azure credentials or SQL Server:
+To run the RoboExamination regression tests against a disposable local SQL Server database without editing configuration:
 
-```bash
-dotnet test StudentsManager.Tests/StudentsManager.Tests.csproj --filter FullyQualifiedName~AzureOpenAiCompatibilityTests
+```powershell
+$env:STUDENTS_MANAGER_TEST_CONNECTION_STRING = 'Server=(localdb)\MSSQLLocalDB;Database=StudentsManager_RoboTests;Integrated Security=true;TrustServerCertificate=true'
+dotnet test .\StudentsManager.Tests\StudentsManager.Tests.csproj --filter 'FullyQualifiedName~RoboExamination'
 ```
 
-These tests use the real SDK with a local fake HTTP transport to verify token-limit serialization and evaluation response parsing for both Azure chat deployments.
+Use a new, test-only database: service tests create the schema and insert test records, while the grade-migration test creates and drops its own uniquely named database on the same server. Evaluation is stubbed; these tests do not call Azure OpenAI.
 
 Or run the Docker-based test environment, which starts SQL Server for the test container:
 

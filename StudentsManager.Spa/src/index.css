@@ -12987,7 +12987,7 @@ details.soge-result-card summary.soge-result-history-toggle:focus-visible {
     justify-content: center;
     gap: 16px;
     padding: 32px 20px;
-    color: #fff;
+    color: #333;
     text-align: center;
 }
 

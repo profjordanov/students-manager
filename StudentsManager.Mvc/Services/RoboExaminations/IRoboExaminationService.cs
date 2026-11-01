@@ -13,24 +13,17 @@ namespace StudentsManager.Mvc.Services.RoboExaminations
         NoVariants,
         AlreadySubmitted,
         AttemptNotFound,
-        InvalidAnswers,
         Duplicate,
-        NotReevaluable,
-        EvaluationSuperseded
+        NotReevaluable
     }
 
-    public sealed record RoboExaminationServiceResult<T>(
-        RoboExaminationServiceStatus Status,
-        T? Value,
-        string? Message = null);
+    public sealed record RoboExaminationServiceResult<T>(RoboExaminationServiceStatus Status, T? Value);
 
     public interface IRoboExaminationService
     {
         Task<RoboExaminationServiceResult<RoboExaminationView>> GetOrAssignAsync(Guid userId);
         Task<RoboExaminationServiceResult<RoboExaminationSummaryView>> CreateAsync(RoboExaminationInput input);
-        Task<RoboExaminationServiceResult<RoboExaminationSubmissionView>> SubmitAsync(
-            RoboExaminationSubmissionInput input,
-            CancellationToken requestAborted);
+        Task<RoboExaminationServiceResult<RoboExaminationSubmissionView>> SubmitAsync(RoboExaminationSubmissionInput input);
         Task<RoboExaminationServiceResult<RoboExaminationSubmissionView>> ReevaluateAsync(int attemptId);
         Task<RoboExaminationServiceResult<IReadOnlyList<RoboExaminationResultView>>> GetResultsAsync(Guid userId);
     }

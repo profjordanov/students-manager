@@ -14,7 +14,7 @@ namespace StudentsManager.Mvc.Controllers
             if (RoboExaminationControllerHelpers.IsInvalidInput(this, input))
                 return RoboExaminationControllerHelpers.InvalidInput(this);
 
-            var result = await service.SubmitAsync(input!, HttpContext.RequestAborted);
+            var result = await service.SubmitAsync(input!);
             return RoboExaminationControllerHelpers.Map(
                 this,
                 result,

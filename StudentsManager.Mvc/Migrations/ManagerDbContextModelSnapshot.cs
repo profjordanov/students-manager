@@ -621,7 +621,7 @@ namespace StudentsManager.Mvc.Migrations
 
                     b.ToTable("RoboExaminationAttempts", t =>
                         {
-                            t.HasCheckConstraint("CK_RoboExaminationAttempts_Grade", "[Grade] IS NULL OR [Grade] BETWEEN 2 AND 6");
+                            t.HasCheckConstraint("CK_RoboExaminationAttempts_Grade", "[Grade] IS NULL OR [Grade] BETWEEN 0 AND 6");
                         });
                 });
 

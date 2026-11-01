@@ -1,5 +1,4 @@
 using System;
-using System.Threading;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
@@ -88,50 +87,16 @@ public class RoboExaminationControllerTests
         Assert.Equal(expectedCode, response.Value!.GetType().GetProperty("code")!.GetValue(response.Value));
     }
 
-    [Fact]
-    public async Task ResultsPostMapsAlreadySubmittedToConflict()
-    {
-        var service = new Mock<IRoboExaminationService>();
-        service.Setup(item => item.SubmitAsync(
-                It.IsAny<RoboExaminationSubmissionInput>(),
-                It.IsAny<CancellationToken>()))
-            .ReturnsAsync(new RoboExaminationServiceResult<RoboExaminationSubmissionView>(
-                RoboExaminationServiceStatus.AlreadySubmitted,
-                null));
-        var controller = new RoboExaminationResultsController(service.Object)
-        {
-            ControllerContext = new ControllerContext { HttpContext = new DefaultHttpContext() },
-            ObjectValidator = Mock.Of<IObjectModelValidator>()
-        };
-
-        var response = Assert.IsType<ObjectResult>(await controller.Create(
-            new RoboExaminationSubmissionInput
-            {
-                UserId = Guid.NewGuid(),
-                AttemptId = 1,
-                Answers = [new RoboExaminationAnswerInput { QuestionId = "q1", Answer = "answer" }]
-            }));
-
-        Assert.Equal(409, response.StatusCode);
-        Assert.Equal("alreadySubmitted", response.Value!.GetType().GetProperty("code")!.GetValue(response.Value));
-    }
-
     [Theory]
-    [InlineData(RoboExaminationServiceStatus.UserNotFound, 404, "userNotFound")]
     [InlineData(RoboExaminationServiceStatus.AttemptNotFound, 404, "attemptNotFound")]
-    [InlineData(RoboExaminationServiceStatus.NoActiveExamination, 403, "noActiveExamination")]
-    [InlineData(RoboExaminationServiceStatus.RoboQuizRequired, 403, "roboQuizRequired")]
-    [InlineData(RoboExaminationServiceStatus.InvalidAnswers, 400, "invalidAnswers")]
-    [InlineData(RoboExaminationServiceStatus.EvaluationSuperseded, 409, "evaluationSuperseded")]
+    [InlineData(RoboExaminationServiceStatus.AlreadySubmitted, 409, "alreadySubmitted")]
     public async Task ResultsPostMapsSubmissionErrors(
         RoboExaminationServiceStatus status,
         int expectedStatus,
         string expectedCode)
     {
         var service = new Mock<IRoboExaminationService>();
-        service.Setup(item => item.SubmitAsync(
-                It.IsAny<RoboExaminationSubmissionInput>(),
-                It.IsAny<CancellationToken>()))
+        service.Setup(item => item.SubmitAsync(It.IsAny<RoboExaminationSubmissionInput>()))
             .ReturnsAsync(new RoboExaminationServiceResult<RoboExaminationSubmissionView>(status, null));
         var controller = new RoboExaminationResultsController(service.Object)
         {
@@ -154,7 +119,6 @@ public class RoboExaminationControllerTests
     [Theory]
     [InlineData(RoboExaminationServiceStatus.AttemptNotFound, 404, "attemptNotFound")]
     [InlineData(RoboExaminationServiceStatus.NotReevaluable, 409, "notReevaluable")]
-    [InlineData(RoboExaminationServiceStatus.EvaluationSuperseded, 409, "evaluationSuperseded")]
     public async Task ReevaluateMapsServiceStatuses(
         RoboExaminationServiceStatus status,
         int expectedStatus,

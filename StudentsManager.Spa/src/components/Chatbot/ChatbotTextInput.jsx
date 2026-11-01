@@ -32,7 +32,7 @@ function ChatbotTextInput({ onSubmit }) {
 
     return (
         <div className={`soge-input-wrapper ${shaking ? 'soge-shake' : ''}`}>
-            <label htmlFor="soge-answer-input" className="soge-input-label">Type your answer here</label>
+            <label htmlFor="soge-answer-input" className="soge-input-label">Type your answer in English</label>
             <textarea
                 id="soge-answer-input"
                 className="soge-textarea"

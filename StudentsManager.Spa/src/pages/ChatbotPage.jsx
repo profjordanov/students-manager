@@ -46,6 +46,9 @@ function ChatbotPage() {
                 <p className="soge-page-subtitle">
                     Решете изпита и изпратете отговорите си за оценяване
                 </p>
+                <p className="soge-page-subtitle">
+                    <strong>Всички отговори трябва да бъдат на английски език.</strong>
+                </p>
             </header>
 
             <div className="soge-chatbot-layout">

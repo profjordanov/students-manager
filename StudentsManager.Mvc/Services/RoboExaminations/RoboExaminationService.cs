@@ -106,107 +106,43 @@ namespace StudentsManager.Mvc.Services.RoboExaminations
         }
 
         public async Task<RoboExaminationServiceResult<RoboExaminationSubmissionView>> SubmitAsync(
-            RoboExaminationSubmissionInput input,
-            CancellationToken requestAborted)
+            RoboExaminationSubmissionInput input)
         {
-            if (!await UserExistsAsync(input.UserId, requestAborted))
-                return new(RoboExaminationServiceStatus.UserNotFound, null);
-
             var attempt = await dbContext.RoboExaminationAttempts
-                .AsNoTracking()
                 .Include(item => item.Examination)
-                .FirstOrDefaultAsync(item => item.Id == input.AttemptId, requestAborted);
-            if (attempt == null || attempt.UserId != input.UserId)
+                .FirstOrDefaultAsync(item => item.Id == input.AttemptId && item.UserId == input.UserId);
+            if (attempt == null)
                 return new(RoboExaminationServiceStatus.AttemptNotFound, null);
             if (attempt.SubmittedAtUtc != null)
                 return new(RoboExaminationServiceStatus.AlreadySubmitted, null);
 
-            var setting = await examinationSettingsService.GetFirstEnabledAsync();
-            if (setting == null || setting.Type != attempt.ExaminationType)
-                return new(RoboExaminationServiceStatus.NoActiveExamination, null);
+            var answers = DeserializeQuestions(attempt.Examination.StringifiedJsonContent)
+                .Select(question => new RoboExaminationAnswerView
+                {
+                    QuestionId = question.Id,
+                    QuestionText = question.Text,
+                    Answer = input.Answers.FirstOrDefault(answer => answer.QuestionId == question.Id)?.Answer ?? string.Empty
+                })
+                .ToList();
 
-            if (!await dbContext.RoboQuizUserResults.AnyAsync(
-                    result => result.UserId == input.UserId && result.RoboQuiz.Type == attempt.ExaminationType,
-                    requestAborted))
-                return new(RoboExaminationServiceStatus.RoboQuizRequired, null);
+            attempt.SubmittedAtUtc = DateTime.UtcNow;
+            attempt.AnswersJson = JsonConvert.SerializeObject(answers, CamelCaseSettings);
+            await dbContext.SaveChangesAsync();
 
-            var questions = DeserializeQuestions(attempt.Examination.StringifiedJsonContent);
-            var validationMessage = ValidateAnswers(questions, input.Answers);
-            if (validationMessage != null)
-                return new(RoboExaminationServiceStatus.InvalidAnswers, null, validationMessage);
-
-            var answersById = input.Answers.ToDictionary(answer => answer.QuestionId, StringComparer.Ordinal);
-            var savedAnswers = questions.Select(question => new StoredAnswer(
-                question.Id,
-                question.Text,
-                answersById[question.Id].Answer.Trim())).ToList();
-            var evaluationItems = BuildEvaluationItems(questions, savedAnswers);
-
-            var claimStartedAtUtc = DateTime.UtcNow;
-            var submittedAtUtc = claimStartedAtUtc;
-            var answersJson = JsonConvert.SerializeObject(savedAnswers, CamelCaseSettings);
-            var claimedRows = await dbContext.RoboExaminationAttempts
-                .Where(item => item.Id == attempt.Id && item.SubmittedAtUtc == null)
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(item => item.SubmittedAtUtc, submittedAtUtc)
-                    .SetProperty(item => item.AnswersJson, answersJson)
-                    .SetProperty(item => item.EvaluationStatus, RoboExaminationEvaluationStatus.Pending)
-                    .SetProperty(item => item.EvaluationStartedAtUtc, claimStartedAtUtc)
-                    .SetProperty(item => item.EvaluationError, (string?)null)
-                    .SetProperty(item => item.Grade, (int?)null)
-                    .SetProperty(item => item.Feedback, (string?)null)
-                    .SetProperty(item => item.RawEvaluation, (string?)null), cancellationToken: requestAborted);
-            if (claimedRows == 0)
-                return new(RoboExaminationServiceStatus.AlreadySubmitted, null);
-
-            var evaluationResult = await EvaluateAndStoreAsync(attempt.Id, claimStartedAtUtc, evaluationItems);
-            if (evaluationResult == RoboExaminationServiceStatus.EvaluationSuperseded)
-                return new(RoboExaminationServiceStatus.EvaluationSuperseded, null);
-
-            var submission = await GetSubmissionViewAsync(attempt.Id);
-            return new(RoboExaminationServiceStatus.Success, submission);
+            await EvaluateAsync(attempt, answers);
+            return new(RoboExaminationServiceStatus.Success, ToSubmissionView(attempt));
         }
 
         public async Task<RoboExaminationServiceResult<RoboExaminationSubmissionView>> ReevaluateAsync(int attemptId)
         {
-            var claimStartedAtUtc = DateTime.UtcNow;
-            var staleBeforeUtc = claimStartedAtUtc.AddMinutes(-5);
-            var claimedRows = await dbContext.RoboExaminationAttempts
-                .Where(attempt => attempt.Id == attemptId
-                    && attempt.SubmittedAtUtc != null
-                    && (attempt.EvaluationStatus == RoboExaminationEvaluationStatus.Failed
-                        || (attempt.EvaluationStatus == RoboExaminationEvaluationStatus.Pending
-                            && attempt.EvaluationStartedAtUtc < staleBeforeUtc)))
-                .ExecuteUpdateAsync(setters => setters
-                    .SetProperty(attempt => attempt.EvaluationStatus, RoboExaminationEvaluationStatus.Pending)
-                    .SetProperty(attempt => attempt.EvaluationStartedAtUtc, claimStartedAtUtc)
-                    .SetProperty(attempt => attempt.EvaluationError, (string?)null)
-                    .SetProperty(attempt => attempt.Grade, (int?)null)
-                    .SetProperty(attempt => attempt.Feedback, (string?)null)
-                    .SetProperty(attempt => attempt.RawEvaluation, (string?)null));
+            var attempt = await dbContext.RoboExaminationAttempts.FindAsync(attemptId);
+            if (attempt == null)
+                return new(RoboExaminationServiceStatus.AttemptNotFound, null);
+            if (attempt.SubmittedAtUtc == null || attempt.EvaluationStatus == RoboExaminationEvaluationStatus.Succeeded)
+                return new(RoboExaminationServiceStatus.NotReevaluable, null);
 
-            if (claimedRows == 0)
-            {
-                var exists = await dbContext.RoboExaminationAttempts.AnyAsync(attempt => attempt.Id == attemptId);
-                return new(
-                    exists ? RoboExaminationServiceStatus.NotReevaluable : RoboExaminationServiceStatus.AttemptNotFound,
-                    null);
-            }
-
-            var attempt = await dbContext.RoboExaminationAttempts
-                .AsNoTracking()
-                .Include(item => item.Examination)
-                .SingleAsync(item => item.Id == attemptId);
-            var questions = DeserializeQuestions(attempt.Examination.StringifiedJsonContent);
-            var savedAnswers = JsonConvert.DeserializeObject<List<StoredAnswer>>(attempt.AnswersJson ?? "[]") ?? [];
-            var evaluationItems = BuildEvaluationItems(questions, savedAnswers);
-            var result = await EvaluateAndStoreAsync(attemptId, claimStartedAtUtc, evaluationItems);
-            if (result == RoboExaminationServiceStatus.EvaluationSuperseded)
-                return new(RoboExaminationServiceStatus.EvaluationSuperseded, null);
-
-            return new(
-                RoboExaminationServiceStatus.Success,
-                await GetSubmissionViewAsync(attemptId));
+            await EvaluateAsync(attempt, DeserializeAnswers(attempt.AnswersJson));
+            return new(RoboExaminationServiceStatus.Success, ToSubmissionView(attempt));
         }
 
         public async Task<RoboExaminationServiceResult<IReadOnlyList<RoboExaminationResultView>>> GetResultsAsync(
@@ -241,95 +177,59 @@ namespace StudentsManager.Mvc.Services.RoboExaminations
                 EvaluationStatus = attempt.EvaluationStatus.ToString(),
                 Grade = attempt.Grade,
                 Feedback = attempt.Feedback,
-                Answers = JsonConvert.DeserializeObject<List<StoredAnswer>>(attempt.AnswersJson ?? "[]")?
-                    .Select(answer => new RoboExaminationAnswerView
-                    {
-                        QuestionId = answer.QuestionId,
-                        QuestionText = answer.QuestionText,
-                        Answer = answer.Answer
-                    }).ToList() ?? []
+                Answers = DeserializeAnswers(attempt.AnswersJson)
             }).ToList();
 
             return new(RoboExaminationServiceStatus.Success, results);
         }
 
-        private async Task<RoboExaminationServiceStatus> EvaluateAndStoreAsync(
-            int attemptId,
-            DateTime claimStartedAtUtc,
-            IReadOnlyList<RoboExaminationEvaluationItem> items)
+        private async Task EvaluateAsync(RoboExaminationAttempt attempt, IReadOnlyList<RoboExaminationAnswerView> answers)
         {
-            RoboExaminationEvaluation? evaluation = null;
-            string? evaluationError = null;
-            string? rawEvaluation = null;
-            var status = RoboExaminationEvaluationStatus.Succeeded;
-
-            using (var timeout = new CancellationTokenSource(TimeSpan.FromSeconds(60)))
-            {
-                try
-                {
-                    evaluation = await evaluator.EvaluateAsync(items, timeout.Token);
-                    rawEvaluation = evaluation.Raw;
-                }
-                catch (RoboExaminationEvaluationException exception)
-                {
-                    status = RoboExaminationEvaluationStatus.Failed;
-                    evaluationError = Truncate(exception.Message, 2000);
-                    rawEvaluation = exception.Raw;
-                    logger.LogError(exception, "RoboExamination attempt {AttemptId} evaluation failed.", attemptId);
-                }
-                catch (OperationCanceledException exception) when (timeout.IsCancellationRequested)
-                {
-                    status = RoboExaminationEvaluationStatus.Failed;
-                    evaluationError = "Evaluation timed out after 60 seconds.";
-                    logger.LogError(exception, "RoboExamination attempt {AttemptId} evaluation timed out.", attemptId);
-                }
-            }
-
-            using var persistenceTimeout = new CancellationTokenSource(TimeSpan.FromSeconds(15));
-            int updatedRows;
             try
             {
-                updatedRows = await dbContext.RoboExaminationAttempts
-                    .Where(attempt => attempt.Id == attemptId
-                        && attempt.EvaluationStartedAtUtc == claimStartedAtUtc
-                        && attempt.EvaluationStatus == RoboExaminationEvaluationStatus.Pending)
-                    .ExecuteUpdateAsync(setters => setters
-                        .SetProperty(attempt => attempt.EvaluationStatus, status)
-                        .SetProperty(attempt => attempt.Grade, evaluation == null ? null : evaluation.Grade)
-                        .SetProperty(attempt => attempt.Feedback, evaluation == null ? null : evaluation.Feedback)
-                        .SetProperty(attempt => attempt.RawEvaluation, rawEvaluation)
-                        .SetProperty(attempt => attempt.EvaluationError, evaluationError),
-                        persistenceTimeout.Token);
+                var evaluation = await evaluator.EvaluateAsync(answers);
+                attempt.Grade = evaluation.Grade;
+                attempt.Feedback = evaluation.Feedback;
+                attempt.EvaluationStatus = RoboExaminationEvaluationStatus.Succeeded;
             }
             catch (Exception exception)
             {
-                logger.LogError(exception, "Could not persist evaluation state for RoboExamination attempt {AttemptId}.", attemptId);
-                throw;
+                // The answers are already saved, so a failed evaluation is recorded and can be retried later.
+                logger.LogError(exception, "RoboExamination attempt {AttemptId} evaluation failed.", attempt.Id);
+                attempt.EvaluationStatus = RoboExaminationEvaluationStatus.Failed;
             }
 
-            if (updatedRows == 0)
+            var userScore = await dbContext
+                .UsersScore
+                .FirstOrDefaultAsync(us => us.UserId == attempt.UserId);
+
+            if (userScore != null)
             {
-                logger.LogWarning("RoboExamination attempt {AttemptId} evaluation was superseded.", attemptId);
-                return RoboExaminationServiceStatus.EvaluationSuperseded;
+                var isFirst = attempt.Examination.Type == CourseExaminationConstants.FirstType;
+
+                if (isFirst)
+                {
+                    userScore.FirstExaminationScore += (decimal)attempt.Grade!;
+                }
+                else
+                {
+                    userScore.SecondExaminationScore += (decimal)attempt.Grade!;
+                }
             }
 
-            return RoboExaminationServiceStatus.Success;
+            await dbContext.SaveChangesAsync();
         }
 
-        private async Task<RoboExaminationSubmissionView> GetSubmissionViewAsync(int attemptId)
+        private static RoboExaminationSubmissionView ToSubmissionView(RoboExaminationAttempt attempt)
         {
-            return await dbContext.RoboExaminationAttempts
-                .AsNoTracking()
-                .Where(attempt => attempt.Id == attemptId)
-                .Select(attempt => new RoboExaminationSubmissionView
-                {
-                    AttemptId = attempt.Id,
-                    SubmittedAtUtc = attempt.SubmittedAtUtc,
-                    EvaluationStatus = attempt.EvaluationStatus.ToString(),
-                    Grade = attempt.Grade,
-                    Feedback = attempt.Feedback
-                })
-                .SingleAsync();
+            return new RoboExaminationSubmissionView
+            {
+                AttemptId = attempt.Id,
+                SubmittedAtUtc = attempt.SubmittedAtUtc,
+                EvaluationStatus = attempt.EvaluationStatus.ToString(),
+                Grade = attempt.Grade,
+                Feedback = attempt.Feedback
+            };
         }
 
         private async Task<RoboExaminationAttempt?> FindAttemptAsync(Guid userId, string type)
@@ -367,56 +267,19 @@ namespace StudentsManager.Mvc.Services.RoboExaminations
             };
         }
 
-        private static string? ValidateAnswers(
-            IReadOnlyList<RoboExaminationQuestion> questions,
-            IReadOnlyList<RoboExaminationAnswerInput> answers)
+        private static List<RoboExaminationAnswerView> DeserializeAnswers(string? content)
         {
-            if (answers.Any(answer => answer == null || string.IsNullOrWhiteSpace(answer.QuestionId)))
-                return "Every answer must be an object with a questionId.";
-            if (answers.GroupBy(answer => answer.QuestionId, StringComparer.Ordinal).Any(group => group.Count() > 1))
-                return "Each question must be answered exactly once; duplicate questionId values were provided.";
-
-            var questionIds = questions.Select(question => question.Id).ToHashSet(StringComparer.Ordinal);
-            var answerIds = answers.Select(answer => answer.QuestionId).ToHashSet(StringComparer.Ordinal);
-            if (!questionIds.SetEquals(answerIds))
-                return "Answers must contain every examination question exactly once and no other question IDs.";
-
-            foreach (var question in questions)
-            {
-                var answer = answers.Single(item => item.QuestionId == question.Id).Answer;
-                if (string.IsNullOrWhiteSpace(answer))
-                    return $"Answer for question {question.Id} cannot be empty.";
-                if (answer.Length > 2000)
-                    return $"Answer for question {question.Id} cannot exceed 2000 characters.";
-            }
-
-            return null;
-        }
-
-        private static IReadOnlyList<RoboExaminationEvaluationItem> BuildEvaluationItems(
-            IReadOnlyList<RoboExaminationQuestion> questions,
-            IReadOnlyList<StoredAnswer> answers)
-        {
-            var answerById = answers.ToDictionary(answer => answer.QuestionId, StringComparer.Ordinal);
-            return questions.Select(question => new RoboExaminationEvaluationItem(
-                question.Text,
-                answerById[question.Id].Answer)).ToList();
+            return JsonConvert.DeserializeObject<List<RoboExaminationAnswerView>>(content ?? "[]") ?? [];
         }
 
         private static List<RoboExaminationQuestion> DeserializeQuestions(string content)
         {
-            return JsonConvert.DeserializeObject<List<RoboExaminationQuestion>>(content)
-                ?? throw new JsonSerializationException("RoboExamination content did not contain a question array.");
+            return JsonConvert.DeserializeObject<List<RoboExaminationQuestion>>(content) ?? [];
         }
 
-        private Task<bool> UserExistsAsync(Guid userId, CancellationToken cancellationToken = default)
+        private Task<bool> UserExistsAsync(Guid userId)
         {
-            return dbContext.Users.AnyAsync(user => user.Id == userId && !user.IsDeleted, cancellationToken);
+            return dbContext.Users.AnyAsync(user => user.Id == userId && !user.IsDeleted);
         }
-
-        private static string Truncate(string value, int maximumLength) =>
-            value.Length <= maximumLength ? value : value[..maximumLength];
-
-        private sealed record StoredAnswer(string QuestionId, string QuestionText, string Answer);
     }
 }

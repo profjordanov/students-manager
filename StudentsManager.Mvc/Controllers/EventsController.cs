@@ -8,19 +8,12 @@ namespace StudentsManager.Mvc.Controllers;
 
 [Route("api/[controller]")]
 [ApiController]
-public class EventsController : ControllerBase
+public class EventsController(ManagerDbContext dbContext) : ControllerBase
 {
-    private readonly ManagerDbContext _dbContext;
-
-    public EventsController(ManagerDbContext dbContext)
-    {
-        _dbContext = dbContext;
-    }
-
     [HttpGet("{userId}")]
     public async Task<IActionResult> GetByUser(string userId)
     {
-        var result = await _dbContext
+        var result = await dbContext
             .Events
             .Where(@event => @event.UserId == userId)
             .ToListAsync();
@@ -39,8 +32,8 @@ public class EventsController : ControllerBase
             Type = input.Type,
             Data = input.Data
         };
-        _dbContext.Events.Add(entity);
-        await _dbContext.SaveChangesAsync();
+        dbContext.Events.Add(entity);
+        await dbContext.SaveChangesAsync();
 
         return CreatedAtAction(nameof(GetByUser), new { userId = entity.UserId }, entity);
     }

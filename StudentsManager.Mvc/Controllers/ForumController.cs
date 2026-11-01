@@ -5,21 +5,12 @@ using StudentsManager.Mvc.Services.Forum;
 
 namespace StudentsManager.Mvc.Controllers
 {
-    public class ForumController : Controller
+    public class ForumController(IForumService service, IPrincipalService principalService) : Controller
     {
-        private readonly IPrincipalService _principalService;
-        private readonly IForumService _service;
-
-        public ForumController(IForumService service, IPrincipalService principalService)
-        {
-            _service = service;
-            _principalService = principalService;
-        }
-
         // GET: /Forum
         public async Task<IActionResult> Index([FromQuery] int pageNumber = 1)
         {
-            var result = await _service.GetPaginatedListAsync(pageNumber);
+            var result = await service.GetPaginatedListAsync(pageNumber);
             return View(result);
         }
 
@@ -31,9 +22,9 @@ namespace StudentsManager.Mvc.Controllers
             var tryQuestionValue = collection.TryGetValue("forumQuestion", out var questionValue);
             if (!tryQuestionValue || string.IsNullOrEmpty(questionValue)) return RedirectToAction(nameof(Index));
 
-            await _service.SaveQuestionAsync(
+            await service.SaveQuestionAsync(
                 questionValue.ToString(),
-                _principalService.GetUserIdByClaimsPrincipal(User));
+                principalService.GetUserIdByClaimsPrincipal(User));
 
             return RedirectToAction(nameof(Index));
         }
@@ -43,7 +34,7 @@ namespace StudentsManager.Mvc.Controllers
         [Route("comment")]
         public async Task<IActionResult> PostComment([FromBody] Comment input)
         {
-            var result = await _service.SaveCommentAsync(input, _principalService.GetUserIdByClaimsPrincipal(User));
+            var result = await service.SaveCommentAsync(input, principalService.GetUserIdByClaimsPrincipal(User));
             return Json(result);
         }
     }

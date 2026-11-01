@@ -48,14 +48,10 @@ namespace StudentsManager.Mvc.Controllers._Base
                     (alreadySubmittedStatus, "alreadySubmitted", "Вече сте предали изпита."),
                 RoboExaminationServiceStatus.AttemptNotFound =>
                     (404, "attemptNotFound", "Examination attempt not found."),
-                RoboExaminationServiceStatus.InvalidAnswers =>
-                    (400, "invalidAnswers", result.Message ?? "The submitted answers are invalid."),
                 RoboExaminationServiceStatus.Duplicate =>
                     (409, "duplicate", "An examination variant with this type and name already exists."),
                 RoboExaminationServiceStatus.NotReevaluable =>
                     (409, "notReevaluable", "This attempt cannot be evaluated again."),
-                RoboExaminationServiceStatus.EvaluationSuperseded =>
-                    (409, "evaluationSuperseded", "A newer evaluation superseded this evaluation."),
                 _ => throw new InvalidOperationException($"Unexpected RoboExamination status: {result.Status}")
             };
 
