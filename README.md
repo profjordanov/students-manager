@@ -62,7 +62,7 @@ dotnet user-secrets set "ConnectionStrings:DefaultConnection" "<sql-server-conne
 dotnet user-secrets set "StorageSettings:AzureConnectionString" "<azure-storage-connection-string>"
 dotnet user-secrets set "ServiceBusSettings:AzureConnectionString" "<azure-service-bus-connection-string>"
 dotnet user-secrets set "ServiceBusSettings:QueueName" "<queue-name>"
-dotnet user-secrets set "RoboExaminationSettings:AdminKey" "<private-admin-key>"
+dotnet user-secrets set "AdminExaminationSettings:AdminKey" "<private-admin-key>"
 dotnet run
 ```
 
@@ -98,12 +98,17 @@ The examples below target the development deployment. Replace placeholder IDs an
 | Events | `GET /api/events/{userId}`, `POST /api/events` |
 | RoboQuiz | `GET /api/roboquiz?userId={id}`, `POST /api/roboquiz`, `POST /api/roboquizresults`, `GET /api/roboquizresults/{userId}` |
 | RoboExamination | `GET /api/roboexamination?userId={id}`, `POST /api/roboexamination`, `POST /api/roboexaminationresults`, `GET /api/roboexaminationresults/{userId}`, `POST /api/roboexaminationresults/{attemptId}/evaluate` |
+| Users score | `GET /api/usersscore` |
 | Legacy AI examination answers | `GET /api/chatbot/examination-answers/{studentId}`, `POST /api/chatbot/examination-answers` |
 | Course settings | `GET /api/homeworks/{userId}`, `GET /api/settings/enable/reg`, `GET /api/settings/disable/reg`, `GET /api/examinationsettings/enabled`, `GET /api/examinationsettings/{enable|disable}/{first|second}` |
+
+All examination settings endpoints require a single `X-Admin-Key` header matching `AdminExaminationSettings:AdminKey` (case-sensitive). Missing or incorrect headers, multiple header values, or an empty configured key return HTTP 401. This includes `/api/examinationsettings/enabled`: the SPA's existing request without the header will receive HTTP 401. Do not expose the admin key in the SPA.
 
 RoboExamination student endpoints accept a caller-supplied `userId`; this matches the SPA's existing session-storage ID model and is not authentication. A caller can impersonate a known user ID, including reading that user's submitted answers through the results endpoint. Instructor endpoints for creating examination variants and re-evaluating submissions require `X-Admin-Key`, configured with `RoboExaminationSettings:AdminKey`. Do not send this key from the SPA.
 
 The legacy Chatbot endpoints remain for historical data and are no longer used by the SPA.
+
+`GET /api/usersscore` is anonymous and returns one item per scored user: `userId`, `userName`, `fullName`, `firstExaminationScore`, `secondExaminationScore`, `points` and `total`. The SPA's `/users-score` page shows each user's full name (with `@userName`) instead of the ID, so the endpoint exposes names next to scores.
 
 ### Robo assessments
 

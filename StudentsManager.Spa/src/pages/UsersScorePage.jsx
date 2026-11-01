@@ -3,6 +3,8 @@ import { getUsersScore } from '../services/usersScoreService';
 
 const formatScore = (value) => Number(value ?? 0).toFixed(2);
 
+const getDisplayName = (score) => score.fullName || score.userName || score.userId;
+
 export default function UsersScorePage() {
   const [scores, setScores] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -34,7 +36,7 @@ export default function UsersScorePage() {
           <table className="users-score-table">
             <thead>
               <tr>
-                <th>User Id</th>
+                <th>User</th>
                 <th>First Examination</th>
                 <th>Second Examination</th>
                 <th>Points</th>
@@ -44,7 +46,12 @@ export default function UsersScorePage() {
             <tbody>
               {scores.map((score) => (
                 <tr key={score.userId}>
-                  <td>{score.userId}</td>
+                  <td>
+                    <div className="student-name">{getDisplayName(score)}</div>
+                    {score.fullName && score.userName && (
+                      <div className="student-username">@{score.userName}</div>
+                    )}
+                  </td>
                   <td>{formatScore(score.firstExaminationScore)}</td>
                   <td>{formatScore(score.secondExaminationScore)}</td>
                   <td>{formatScore(score.points)}</td>

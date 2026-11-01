@@ -155,7 +155,7 @@ namespace StudentsManager.Mvc.Services.RoboExaminations
                     .SetProperty(item => item.EvaluationError, (string?)null)
                     .SetProperty(item => item.Grade, (int?)null)
                     .SetProperty(item => item.Feedback, (string?)null)
-                    .SetProperty(item => item.RawEvaluation, (string?)null));
+                    .SetProperty(item => item.RawEvaluation, (string?)null), cancellationToken: requestAborted);
             if (claimedRows == 0)
                 return new(RoboExaminationServiceStatus.AlreadySubmitted, null);
 
