@@ -6,17 +6,10 @@ using StudentsManager.Mvc.Persistence;
 
 namespace StudentsManager.Mvc.Services.Forum
 {
-    public class ForumService : IForumService
+    public class ForumService(ManagerDbContext dbContext) : IForumService
     {
-        private readonly ManagerDbContext _dbContext;
-
-        public ForumService(ManagerDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
         private IQueryable<ForumQuestion> ForumQuestionsWithComments =>
-            _dbContext
+            dbContext
                 .ForumQuestions
                 .AsNoTracking()
                 .Include(question => question.Comments)
@@ -42,8 +35,8 @@ namespace StudentsManager.Mvc.Services.Forum
                 Description = question,
                 UserId = userId
             };
-            var entry = await _dbContext.ForumQuestions.AddAsync(entity);
-            await _dbContext.SaveChangesAsync();
+            var entry = await dbContext.ForumQuestions.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
             return entry.Entity;
         }
 
@@ -55,14 +48,14 @@ namespace StudentsManager.Mvc.Services.Forum
                 ForumQuestionId = input.ForumQuestionId,
                 UserId = userId
             };
-            await _dbContext.ForumComments.AddAsync(entity);
-            await _dbContext.SaveChangesAsync();
+            await dbContext.ForumComments.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
             return entity;
         }
 
         public Task<List<string>> GetSlidoQuestionsAsync(int limit = 20, int skip = 0)
         {
-            return _dbContext
+            return dbContext
                 .ForumQuestions
                 .AsNoTracking()
                 .OrderByDescending(question => question.Id)

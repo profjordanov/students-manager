@@ -4,17 +4,10 @@ using StudentsManager.Mvc.Persistence;
 
 namespace StudentsManager.Mvc.Services.AppSettings
 {
-    public class ScreenSettingService : IScreenSettingService
+    public class ScreenSettingService(ManagerDbContext dbContext) : IScreenSettingService
     {
-        private readonly ManagerDbContext _dbContext;
-
-        public ScreenSettingService(ManagerDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
         public Task<ScreenSetting?> RegistrationScreenSettingAsync =>
-            _dbContext
+            dbContext
                 .ScreenSettings
                 .FirstOrDefaultAsync(setting => setting.Type == ScreenSettingConstants.RegistrationScreenType);
 
@@ -26,8 +19,8 @@ namespace StudentsManager.Mvc.Services.AppSettings
                 return null;
             }
             entity.Enabled = enabled;
-            _dbContext.ScreenSettings.Update(entity);
-            await _dbContext.SaveChangesAsync();
+            dbContext.ScreenSettings.Update(entity);
+            await dbContext.SaveChangesAsync();
             return entity;
         }
     }

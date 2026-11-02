@@ -4,18 +4,11 @@ using StudentsManager.Mvc.Persistence;
 
 namespace StudentsManager.Mvc.Services.CourseExaminations
 {
-    public class StudentCourseExaminationService : IStudentCourseExaminationService
+    public class StudentCourseExaminationService(ManagerDbContext dbContext) : IStudentCourseExaminationService
     {
-        private readonly ManagerDbContext _dbContext;
-
-        public StudentCourseExaminationService(ManagerDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
         public async Task<StudentCourseExamination> GetOrCreateAsync(Guid userId, string examinationType)
         {
-            var result = await _dbContext
+            var result = await dbContext
                 .StudentCourseExaminations
                 .Include(examination => examination.CourseExamination)
                 .FirstOrDefaultAsync(examination =>
@@ -31,15 +24,15 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
             var studentExamination = await GetOrCreateAsync(userId, examinationType);
             studentExamination.Score = score;
 
-            _dbContext.StudentCourseExaminations.Update(studentExamination);
-            await _dbContext.SaveChangesAsync();
+            dbContext.StudentCourseExaminations.Update(studentExamination);
+            await dbContext.SaveChangesAsync();
 
             return studentExamination;
         }
 
         public async Task<StudentCourseExamination> AssignedAsync(Guid userId, string examinationType)
         {
-            var examinations = await _dbContext
+            var examinations = await dbContext
                 .CourseExaminations
                 .Where(examination => examination.Type == examinationType)
                 .ToListAsync();
@@ -53,9 +46,29 @@ namespace StudentsManager.Mvc.Services.CourseExaminations
                 CourseExaminationId = examinations[position].Id
             };
 
-            await _dbContext.StudentCourseExaminations.AddAsync(entity);
-            await _dbContext.SaveChangesAsync();
+            await dbContext.StudentCourseExaminations.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
             return entity;
+        }
+
+        public async Task AddToUserScoreAsync(Guid userId, string examinationType)
+        {
+            var userScore = await dbContext.UsersScore.FirstOrDefaultAsync(score => score.UserId == userId);
+            if (userScore == null)
+            {
+                return;
+            }
+
+            switch (examinationType)
+            {
+                case CourseExaminationConstants.FirstType:
+                    userScore.FirstExaminationScore += 3;
+                    break;
+                case CourseExaminationConstants.SecondType:
+                    userScore.SecondExaminationScore += 3;
+                    break;
+            }
+            await dbContext.SaveChangesAsync();
         }
     }
 }

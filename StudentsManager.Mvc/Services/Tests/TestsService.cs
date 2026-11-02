@@ -6,15 +6,8 @@ using StudentsManager.Mvc.Persistence;
 
 namespace StudentsManager.Mvc.Services.Tests
 {
-    public class TestsService : ITestsService
+    public class TestsService(ManagerDbContext dbContext) : ITestsService
     {
-        private readonly ManagerDbContext _dbContext;
-
-        public TestsService(ManagerDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
         public async Task<TestViewModel> GetTestAsync(Guid topicId, Guid userId)
         {
             var entities = await GetTestQuestionsAsync(topicId, userId);
@@ -26,7 +19,7 @@ namespace StudentsManager.Mvc.Services.Tests
 
         public async Task<IEnumerable<TestQuestion>> GetTestQuestionsAsync(Guid topicId, Guid userId)
         {
-            var alreadyAnswered = await _dbContext
+            var alreadyAnswered = await dbContext
                 .UserAnswers
                 .Where(answer => answer.UserId == userId)
                 .Include(answer => answer.QuestionOption)
@@ -34,7 +27,7 @@ namespace StudentsManager.Mvc.Services.Tests
                 .Where(answer => answer.QuestionOption.TestQuestion.TopicId == topicId)
                 .ToListAsync();
 
-            var testQuestions = await _dbContext
+            var testQuestions = await dbContext
                 .TestQuestions
                 .Where(question => question.TopicId == topicId)
                 .Include(question => question.Options)

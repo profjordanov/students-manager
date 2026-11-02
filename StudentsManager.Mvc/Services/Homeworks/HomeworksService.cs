@@ -6,25 +6,16 @@ using StudentsManager.Mvc.Services.Storage;
 
 namespace StudentsManager.Mvc.Services.Homeworks
 {
-    public class HomeworksService : IHomeworksService
+    public class HomeworksService(ManagerDbContext dbContext, IStorageService storageService) : IHomeworksService
     {
-        private readonly ManagerDbContext _dbContext;
-        private readonly IStorageService _storageService;
-
-        public HomeworksService(ManagerDbContext dbContext, IStorageService storageService)
-        {
-            _dbContext = dbContext;
-            _storageService = storageService;
-        }
-
         public async Task<IReadOnlyCollection<HomeworkView>> GetByUserAsync(Guid userId)
         {
-            var topics = await _dbContext
+            var topics = await dbContext
                 .Topics
                 .OrderBy(topic => topic.SequenceNumber)
                 .ToListAsync();
 
-            var handedHomeworks = await _dbContext
+            var handedHomeworks = await dbContext
                 .Homeworks
                 .Where(homework => homework.UserId == userId)
                 .ToListAsync();
@@ -55,14 +46,14 @@ namespace StudentsManager.Mvc.Services.Homeworks
             {
                 var random = new Random();
                 var fileName = $"{topicTag}{random.Next(0, 100000)}-{file.FileName}";
-                await _storageService.UploadToContainerAsync(userId.ToString(), file.OpenReadStream(), fileName);
+                await storageService.UploadToContainerAsync(userId.ToString(), file.OpenReadStream(), fileName);
                 entity.FileName = fileName;
-                entity.Path = _storageService.PathBasis + userId + "/" + fileName;
+                entity.Path = storageService.PathBasis + userId + "/" + fileName;
                 entity.Extension = file.ContentType;
             }
 
-            await _dbContext.Homeworks.AddAsync(entity);
-            await _dbContext.SaveChangesAsync();
+            await dbContext.Homeworks.AddAsync(entity);
+            await dbContext.SaveChangesAsync();
         }
 
         private static HomeworkView MapTopicToHomeworkView(Topic topic, IReadOnlyDictionary<Guid, string> homeworksDictionary)
