@@ -10,13 +10,14 @@ namespace StudentsManager.Mvc.Services.Students
 {
     public class StudentsService(ManagerDbContext dbContext, UserManager<User> userManager) : IStudentsService
     {
-        public async Task<List<StudentView?>> AllAsync() => 
-            (await dbContext
+        public async Task<List<StudentView?>> AllAsync() =>
+        [
+            .. (await dbContext
                 .Users
                 .Where(user => user.IsDeleted == false)
                 .ToListAsync())
             .Select(user => user.ToView())
-            .ToList();
+        ];
 
         public async Task<StudentView?> GetByFacultyNumberAsync(string facultyNumber)
         {

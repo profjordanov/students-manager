@@ -16,6 +16,7 @@ namespace StudentsManager.Mvc.Controllers
             // Select only the name columns: loading the whole User would also read every Base64EncodePicture.
             var scores = await context.UsersScore
                 .Include(score => score.User)
+                .Where(score => score.User!.IsDeleted == false)
                 .AsNoTracking()
                 .Select(score => new
                 {

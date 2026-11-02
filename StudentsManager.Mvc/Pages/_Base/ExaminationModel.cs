@@ -56,10 +56,12 @@ namespace StudentsManager.Mvc.Pages._Base
             }
         }
 
-        protected Task<StudentCourseExaminationUpload> PostAsync(string examinationType)
+        protected async Task<StudentCourseExaminationUpload> PostAsync(string examinationType)
         {
             var userId = PrincipalService.GetUserIdByClaimsPrincipal(User);
-            return UploadService.AttachFileAsync(StudentExaminationId, examinationType, File, userId);
+            var result = await UploadService.AttachFileAsync(StudentExaminationId, examinationType, File, userId);
+            await StudentExaminationService.AddToUserScoreAsync(userId, examinationType);
+            return result;
         }
     }
 }

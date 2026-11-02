@@ -8,17 +8,13 @@ using static StudentsManager.Mvc.Services.CourseExaminations.CourseExaminationCo
 namespace StudentsManager.Mvc.Pages
 {
     [Authorize]
-    public class SecondExaminationModel : ExaminationModel
+    public class SecondExaminationModel(
+        IPrincipalService principalService,
+        IExaminationSettingsService settingsService,
+        IStudentCourseExaminationService studentExaminationService,
+        IExaminationUploadService uploadService)
+        : ExaminationModel(principalService, settingsService, studentExaminationService, uploadService)
     {
-        public SecondExaminationModel(
-            IPrincipalService principalService,
-            IExaminationSettingsService settingsService,
-            IStudentCourseExaminationService studentExaminationService,
-            IExaminationUploadService uploadService) :
-            base(principalService, settingsService, studentExaminationService, uploadService)
-        {
-        }
-
         public async Task OnGetAsync()
         {
             await GetAsync(SecondType);

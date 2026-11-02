@@ -5,24 +5,17 @@ using StudentsManager.Mvc.Persistence;
 
 namespace StudentsManager.Mvc.Services.Topics
 {
-    public class TopicsService : ITopicsService
+    public class TopicsService(ManagerDbContext dbContext) : ITopicsService
     {
-        private readonly ManagerDbContext _dbContext;
-
-        public TopicsService(ManagerDbContext dbContext)
-        {
-            _dbContext = dbContext;
-        }
-
         public async Task<IEnumerable<UserTopicResultView>> GetUserTopicResultsAsync(Guid userId)
         {
-            var userTopicIdResults = await _dbContext
+            var userTopicIdResults = await dbContext
                 .UserTopicResults
                 .Where(ut => ut.UserId == userId)
                 .Select(ut => ut.TopicId)
                 .ToListAsync();
 
-            var topics = await _dbContext
+            var topics = await dbContext
                 .Topics
                 .OrderBy(topic => topic.SequenceNumber)
                 .ToListAsync();
@@ -35,7 +28,7 @@ namespace StudentsManager.Mvc.Services.Topics
 
         public Task<bool> HasUserTopicResultAsync(Guid userId, Guid topicId)
         {
-            return _dbContext
+            return dbContext
                 .UserTopicResults
                 .AnyAsync(ut => ut.TopicId == topicId && ut.UserId == userId);
         }

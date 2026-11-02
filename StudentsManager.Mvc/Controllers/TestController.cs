@@ -9,32 +9,18 @@ using StudentsManager.Mvc.Services.Topics;
 namespace StudentsManager.Mvc.Controllers
 {
     [Authorize]
-    public class TestController : Controller
+    public class TestController(
+        ITopicsService topicsService,
+        ITestsService testsService,
+        IPrincipalService principalService,
+        IUserAnswersService userAnswersService,
+        IUserTopicResultsService userTopicResultsService)
+        : Controller
     {
-        private readonly IPrincipalService _principalService;
-        private readonly ITestsService _testsService;
-        private readonly ITopicsService _topicsService;
-        private readonly IUserAnswersService _userAnswersService;
-        private readonly IUserTopicResultsService _userTopicResultsService;
-
-        public TestController(
-            ITopicsService topicsService,
-            ITestsService testsService,
-            IPrincipalService principalService,
-            IUserAnswersService userAnswersService,
-            IUserTopicResultsService userTopicResultsService)
-        {
-            _topicsService = topicsService;
-            _testsService = testsService;
-            _principalService = principalService;
-            _userAnswersService = userAnswersService;
-            _userTopicResultsService = userTopicResultsService;
-        }
-
         public async Task<IActionResult> Index()
         {
-            var userId = _principalService.GetUserIdByClaimsPrincipal(User);
-            var result = await _topicsService.GetUserTopicResultsAsync(userId);
+            var userId = principalService.GetUserIdByClaimsPrincipal(User);
+            var result = await topicsService.GetUserTopicResultsAsync(userId);
             return View(result);
         }
 
@@ -42,10 +28,10 @@ namespace StudentsManager.Mvc.Controllers
         [Route("start/{topicId}")]
         public async Task<IActionResult> Start([FromRoute] Guid topicId)
         {
-            var userId = _principalService.GetUserIdByClaimsPrincipal(User);
-            if (await _topicsService.HasUserTopicResultAsync(userId, topicId))
+            var userId = principalService.GetUserIdByClaimsPrincipal(User);
+            if (await topicsService.HasUserTopicResultAsync(userId, topicId))
                 return RedirectToAction("Result", new { topicId });
-            var result = await _testsService.GetTestAsync(topicId, userId);
+            var result = await testsService.GetTestAsync(topicId, userId);
 
             TempData["topicId"] = topicId;
             return View(result);
@@ -54,8 +40,8 @@ namespace StudentsManager.Mvc.Controllers
         [HttpPost]
         public async Task<IActionResult> RegisterUserAnswer([FromBody] ChosenOption optionModel)
         {
-            var userId = _principalService.GetUserIdByClaimsPrincipal(User);
-            await _userAnswersService.AddAsync(userId, optionModel.ChosenOptionId);
+            var userId = principalService.GetUserIdByClaimsPrincipal(User);
+            await userAnswersService.AddAsync(userId, optionModel.ChosenOptionId);
             return Ok();
         }
 
@@ -64,9 +50,9 @@ namespace StudentsManager.Mvc.Controllers
         public async Task<IActionResult> SubmitAnswers([FromQuery] string v, [FromBody] TestBindingModel model)
         {
             var topicId = TempData["topicId"].ToString() ?? throw new ArgumentNullException();
-            var userId = _principalService.GetUserIdByClaimsPrincipal(User);
+            var userId = principalService.GetUserIdByClaimsPrincipal(User);
 
-            await _userTopicResultsService.ProcessAsync(Guid.Parse(topicId), userId);
+            await userTopicResultsService.ProcessAsync(Guid.Parse(topicId), userId);
 
             var result = new
             {
@@ -85,8 +71,8 @@ namespace StudentsManager.Mvc.Controllers
         [HttpGet]
         public async Task<IActionResult> Result(Guid topicId)
         {
-            var userId = _principalService.GetUserIdByClaimsPrincipal(User);
-            var result = await _userTopicResultsService.GetSingleAsync(topicId, userId);
+            var userId = principalService.GetUserIdByClaimsPrincipal(User);
+            var result = await userTopicResultsService.GetSingleAsync(topicId, userId);
             return View(result);
         }
     }
