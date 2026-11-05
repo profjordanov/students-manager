@@ -67,6 +67,8 @@ namespace StudentsManager.Mvc.Persistence
 
         public DbSet<UserScore> UsersScore { get; set; }
 
+        public DbSet<UserGithub> UserGithubs { get; set; }
+
         protected override void OnModelCreating(ModelBuilder builder)
         {
             builder.ConfigureQuestionOptionRelations();
@@ -87,6 +89,7 @@ namespace StudentsManager.Mvc.Persistence
             builder.ConfigureRoboQuizzes();
             builder.ConfigureRoboExaminations();
             builder.ConfigureUsersScore();
+            builder.ConfigureUserGithubs();
 
             builder.ConfigureCourses();
             builder.ConfigureCourseExamination();

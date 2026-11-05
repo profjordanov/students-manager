@@ -1112,6 +1112,28 @@ namespace StudentsManager.Mvc.Migrations
                     b.ToTable("UserCourseworks");
                 });
 
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserGithub", b =>
+                {
+                    b.Property<Guid>("UserId")
+                        .HasColumnType("uniqueidentifier");
+
+                    b.Property<string>("Description")
+                        .IsRequired()
+                        .HasMaxLength(1000)
+                        .HasColumnType("nvarchar(1000)")
+                        .HasComment("Description of the linked GitHub profile or repository");
+
+                    b.Property<string>("GithubLink")
+                        .IsRequired()
+                        .HasMaxLength(500)
+                        .HasColumnType("nvarchar(500)")
+                        .HasComment("Link to the user's GitHub profile or repository");
+
+                    b.HasKey("UserId");
+
+                    b.ToTable("UserGithubs", (string)null);
+                });
+
             modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserScore", b =>
                 {
                     b.Property<Guid>("UserId")
@@ -1476,6 +1498,17 @@ namespace StudentsManager.Mvc.Migrations
                     b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
                         .WithMany("Courseworks")
                         .HasForeignKey("UserId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("User");
+                });
+
+            modelBuilder.Entity("StudentsManager.Mvc.Domain.Entities.UserGithub", b =>
+                {
+                    b.HasOne("StudentsManager.Mvc.Domain.Entities.User", "User")
+                        .WithOne()
+                        .HasForeignKey("StudentsManager.Mvc.Domain.Entities.UserGithub", "UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
 

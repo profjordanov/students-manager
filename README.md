@@ -360,6 +360,32 @@ All routes are relative to the API base, for example `https://students-manager.a
 | `PUT` | `/students/picture` | Faculty number + password in body | `{ facultyNumber, password, picture }` (data URL) |
 | `PATCH` | `/students/examination` | Hard-coded `classified` header | `{ userId, type, score }` sets a practical-examination score |
 
+### User GitHub links
+
+Each user can store one GitHub link with a short description. The user ID comes from the required `X-User-Id` request header, not from the URL, query string or body. The header identifies the user but doesn't authenticate them (see [Security notes](#security-notes-and-known-issues)).
+
+| Method | Route | Description |
+|---|---|---|
+| `GET` | `/usergithubs` | `200 { userId, githubLink, description }`, or `404 githubNotFound` if the user has none |
+| `POST` | `/usergithubs` | `{ githubLink, description }` creates the link. Returns `201` with the link and a `Location` header, or `409 alreadyExists` if the user already has one. |
+| `PUT` | `/usergithubs` | `{ githubLink, description }` replaces the link. Returns `200` with the updated link, or `404 githubNotFound` if the user has none (it doesn't create one). |
+| `DELETE` | `/usergithubs` | Returns `204`, or `404 githubNotFound` if the user has none |
+
+- `githubLink` is required, up to 500 characters, and must be an `http` or `https` link to `github.com` or one of its subdomains (for example `gist.github.com`) with a path below the site root, such as `https://github.com/octocat`. Credentials, custom ports and whitespace are rejected.
+- `description` is required and up to 1000 characters.
+- Both values are trimmed before they're saved. A `userId` in the body is ignored.
+- Soft-deleted users are treated as unknown (`404 userNotFound`). Removing a user row also removes their link.
+
+The `UserGithubs` table, added by the `AddUserGithubs` migration (applied at startup), has one row per user: `UserId` is both its primary key and a foreign key to the user.
+
+Errors return `{ message, code }`:
+
+| Status | Codes |
+|---|---|
+| `400` | `invalidUserId` (the header is missing, isn't a GUID or is all zeros), `validation` (the body is missing or malformed, or a field is invalid; `message` describes the first problem) |
+| `404` | `userNotFound`, `githubNotFound` |
+| `409` | `alreadyExists` |
+
 ### Forum, events and homework
 
 | Method | Route | Description |
@@ -515,6 +541,32 @@ curl "$API/events/<user-id>"
 ]
 ```
 
+**User GitHub link**
+
+```bash
+curl --request POST "$API/usergithubs" \
+  --header 'X-User-Id: <user-id>' \
+  --header 'Content-Type: application/json' \
+  --data '{ "githubLink": "https://github.com/octocat", "description": "My GitHub profile" }'
+
+curl "$API/usergithubs" --header 'X-User-Id: <user-id>'
+
+curl --request PUT "$API/usergithubs" \
+  --header 'X-User-Id: <user-id>' \
+  --header 'Content-Type: application/json' \
+  --data '{ "githubLink": "https://github.com/octocat/Hello-World", "description": "Hello World repository" }'
+
+curl --request DELETE "$API/usergithubs" --header 'X-User-Id: <user-id>'
+```
+
+```json
+{
+  "userId": "1eac9820-5e6e-4d10-6e94-08de36f40f78",
+  "githubLink": "https://github.com/octocat",
+  "description": "My GitHub profile"
+}
+```
+
 **Enable an examination type (admin)**
 
 ```bash
@@ -587,6 +639,7 @@ curl --request POST "$API/roboexaminationresults" \
 `StudentsManager.Tests` (xUnit + Moq, `net10.0`) covers:
 
 - RoboExamination: controller, input validation, serialization, service integration and grade migration
+- User GitHub links: controller (including `X-User-Id` header handling), input validation and service integration
 - Surveys, personality tests, the users score endpoint and the home controller
 
 Run all tests:
@@ -602,7 +655,7 @@ $env:STUDENTS_MANAGER_TEST_CONNECTION_STRING = 'Server=(localdb)\MSSQLLocalDB;Da
 dotnet test .\StudentsManager.Tests\StudentsManager.Tests.csproj --filter 'FullyQualifiedName~RoboExamination'
 ```
 
-Use a test-only database. Service tests create the schema and insert records. The grade-migration and users score tests create and drop their own uniquely named databases on the same server, so the login needs permission to create databases. Evaluation is mocked, so the tests don't call Azure OpenAI.
+Use a test-only database. Service tests create the schema and insert records. The grade-migration, users score and user GitHub link tests create and drop their own uniquely named databases on the same server, so the login needs permission to create databases. Evaluation is mocked, so the tests don't call Azure OpenAI.
 
 The Docker test environment starts SQL Server and runs `dotnet test` in a container:
 
@@ -629,7 +682,7 @@ This platform is used for teaching, and some shortcuts are intentional. Review t
 
 ### Security model
 
-- **Caller-supplied identity:** SPA-facing endpoints trust the `userId` in the request. That's not authentication: anyone who knows a user ID can act as that user or read their data, including submitted RoboExamination answers.
+- **Caller-supplied identity:** SPA-facing endpoints trust the `userId` in the request, or the `X-User-Id` header for `/api/usergithubs`. That's not authentication: anyone who knows a user ID can act as that user or read their data, including submitted RoboExamination answers, and can create, replace or delete that user's GitHub link.
 - **Unprotected instructor endpoints:** `POST /api/roboquiz`, `POST /api/roboexamination` and `POST /api/roboexaminationresults/{attemptId}/evaluate` don't have `[RequireAdminKey]`. `Settings/RoboExaminationSettings.cs` exists but isn't bound or used.
 - **Admin key scope:** `X-Admin-Key` protects only the examination-type and registration-screen toggles. Keep the key out of the SPA.
 - **Hard-coded credentials:** `GET /api/students` and `PATCH /api/students/examination` check credentials hard-coded in `StudentsController`. The Basic credential is also embedded in the SPA bundle.
