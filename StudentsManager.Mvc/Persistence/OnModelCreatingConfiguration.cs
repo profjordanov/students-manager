@@ -378,6 +378,34 @@ namespace StudentsManager.Mvc.Persistence
             });
         }
 
+        public static void ConfigureUserGithubs(this ModelBuilder builder)
+        {
+            builder.Entity<UserGithub>(entity =>
+            {
+                entity.ToTable("UserGithubs");
+
+                entity.HasKey(github => github.UserId);
+
+                entity
+                    .HasOne(github => github.User)
+                    .WithOne()
+                    .HasForeignKey<UserGithub>(github => github.UserId)
+                    .OnDelete(DeleteBehavior.Cascade);
+
+                entity
+                    .Property(github => github.GithubLink)
+                    .IsRequired()
+                    .HasMaxLength(UserGithub.GithubLinkMaxLength)
+                    .HasComment("Link to the user's GitHub profile or repository");
+
+                entity
+                    .Property(github => github.Description)
+                    .IsRequired()
+                    .HasMaxLength(UserGithub.DescriptionMaxLength)
+                    .HasComment("Description of the linked GitHub profile or repository");
+            });
+        }
+
         public static void ConfigurePowerUpAnalyses(this ModelBuilder builder)
         {
             builder

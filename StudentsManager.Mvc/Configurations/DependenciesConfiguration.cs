@@ -24,6 +24,7 @@ using StudentsManager.Mvc.Services.Students;
 using StudentsManager.Mvc.Services.Surveys;
 using StudentsManager.Mvc.Services.Tests;
 using StudentsManager.Mvc.Services.Topics;
+using StudentsManager.Mvc.Services.UserGithubs;
 using StudentsManager.Mvc.Settings;
 
 namespace StudentsManager.Mvc.Configurations
@@ -140,6 +141,8 @@ namespace StudentsManager.Mvc.Configurations
                 services.AddScoped<IRoboQuizService, RoboQuizService>();
                 services.AddScoped<IRoboExaminationService, RoboExaminationService>();
                 services.AddScoped<IRoboExaminationEvaluator, AzureOpenAiRoboExaminationEvaluator>();
+
+                services.AddScoped<IUserGithubsService, UserGithubsService>();
 
                 services.AddScoped<IExaminationAnswersService, ExaminationAnswersService>();
                 return services;
